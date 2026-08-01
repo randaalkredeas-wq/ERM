@@ -7,15 +7,24 @@ import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { navGroups } from "@/constants/nav";
 import { siteConfig } from "@/config/site";
+import type { CurrentUser } from "@/lib/dal";
+import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 
-export function Sidebar() {
+export function Sidebar({ user }: { user: CurrentUser }) {
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } =
     useSidebar();
   const pathname = usePathname();
   const { dict, dir } = useLocale();
   const collapseIconRotated = collapsed !== (dir === "rtl");
+
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => can(user.role, item.module, "view")),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <>
@@ -66,7 +75,7 @@ export function Sidebar() {
         </div>
 
         <nav className="flex-1 scrollbar-thin space-y-6 overflow-y-auto px-3 py-4">
-          {navGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.key}>
               {!collapsed && (
                 <p className="text-sidebar-muted mb-2 px-3 text-[11px] font-semibold tracking-wider uppercase">

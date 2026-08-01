@@ -68,12 +68,16 @@ export default function DashboardPage() {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
 
   useEffect(() => {
+    // Some roles (e.g. Employee, Read-only Executive) can't view incidents
+    // or approvals - the dashboard still renders fine with an empty list.
     void apiClient
       .get<{ data: IncidentItem[] }>("/api/incidents?pageSize=200")
-      .then((res) => setIncidents(res.data));
+      .then((res) => setIncidents(res.data))
+      .catch(() => {});
     void apiClient
       .get<{ data: ApprovalItem[] }>("/api/approvals?status=pending&pageSize=200")
-      .then((res) => setApprovals(res.data));
+      .then((res) => setApprovals(res.data))
+      .catch(() => {});
   }, []);
 
   const activeRisks = risks.filter((r) => !r.isArchived);

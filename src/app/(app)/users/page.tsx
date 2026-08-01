@@ -29,7 +29,8 @@ export default function UsersPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: UserItem[] }>("/api/users?pageSize=200")
-      .then((res) => setUsers(res.data));
+      .then((res) => setUsers(res.data))
+      .catch(() => {});
   }, []);
 
   const active = users.filter((u) => u.status === "active").length;

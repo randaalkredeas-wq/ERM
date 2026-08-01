@@ -21,7 +21,8 @@ export default function AiInsightsPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: AiInsightItem[] }>("/api/ai-insights?pageSize=50")
-      .then((res) => setInsights(res.data));
+      .then((res) => setInsights(res.data))
+      .catch(() => {});
   }, []);
 
   const dismiss = (id: string) =>

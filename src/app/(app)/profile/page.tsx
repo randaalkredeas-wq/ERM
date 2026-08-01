@@ -36,11 +36,15 @@ export default function ProfilePage() {
       .get<{ data: CurrentUser }>("/api/me")
       .then((res) => {
         setUser(res.data);
-        return apiClient.get<{ data: AuditLogEntry[] }>(
-          `/api/audit-log?userId=${res.data.id}&pageSize=20`,
-        );
-      })
-      .then((res) => setActivity(res.data));
+        // Roles without audit-log access (e.g. Employee, Read-only
+        // Executive) simply see no recent-activity list.
+        return apiClient
+          .get<{ data: AuditLogEntry[] }>(
+            `/api/audit-log?userId=${res.data.id}&pageSize=20`,
+          )
+          .then((activityRes) => setActivity(activityRes.data))
+          .catch(() => {});
+      });
   }, []);
 
   if (!user) return null;

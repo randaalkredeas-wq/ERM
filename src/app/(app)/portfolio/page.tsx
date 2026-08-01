@@ -126,7 +126,8 @@ export default function PortfolioPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: CreditExposure[] }>("/api/portfolio/exposures?pageSize=200")
-      .then((res) => setCreditExposures(res.data));
+      .then((res) => setCreditExposures(res.data))
+      .catch(() => {});
     void apiClient
       .get<{
         data: {
@@ -141,7 +142,8 @@ export default function PortfolioPage() {
         setEclStageBreakdown(res.data.eclStageBreakdown);
         setSectorConcentration(res.data.sectorConcentration);
         setAgingBuckets(res.data.agingBuckets);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   const trendData =

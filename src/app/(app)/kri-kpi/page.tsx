@@ -28,7 +28,8 @@ export default function KriKpiPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: KriItem[] }>("/api/kri?pageSize=100")
-      .then((res) => setKris(res.data));
+      .then((res) => setKris(res.data))
+      .catch(() => {});
   }, []);
 
   return (

@@ -24,7 +24,7 @@ function AppShellInner({
 
   return (
     <div className="bg-background min-h-screen">
-      <Sidebar />
+      <Sidebar user={user} />
       <div
         className={cn(
           "flex min-h-screen flex-col transition-[padding] duration-300 ease-in-out print:ps-0",

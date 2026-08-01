@@ -28,10 +28,12 @@ export default function ReportsPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: ReportTemplateItem[] }>("/api/reports/templates")
-      .then((res) => setReportTemplates(res.data));
+      .then((res) => setReportTemplates(res.data))
+      .catch(() => {});
     void apiClient
       .get<{ data: GeneratedReportItem[] }>("/api/reports/generated?pageSize=50")
-      .then((res) => setGeneratedReports(res.data));
+      .then((res) => setGeneratedReports(res.data))
+      .catch(() => {});
   }, []);
 
   return (

@@ -33,7 +33,8 @@ export default function ApprovalsPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: ApprovalItem[] }>("/api/approvals?pageSize=200")
-      .then((res) => setApprovals(res.data));
+      .then((res) => setApprovals(res.data))
+      .catch(() => {});
   }, []);
 
   const updateStatus = (id: string, status: ApprovalStatus) => {

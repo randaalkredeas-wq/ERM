@@ -28,7 +28,8 @@ export default function IncidentsPage() {
   useEffect(() => {
     void apiClient
       .get<{ data: IncidentItem[] }>("/api/incidents?pageSize=200")
-      .then((res) => setIncidents(res.data));
+      .then((res) => setIncidents(res.data))
+      .catch(() => {});
   }, []);
 
   const open = incidents.filter((i) => i.status === "open").length;

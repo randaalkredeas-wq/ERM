@@ -44,7 +44,8 @@ export default function DocumentsPage() {
   function reload() {
     void apiClient
       .get<{ data: DocumentItem[] }>("/api/documents?pageSize=200")
-      .then((res) => setDocuments(res.data));
+      .then((res) => setDocuments(res.data))
+      .catch(() => {});
   }
 
   useEffect(reload, []);
