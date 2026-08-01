@@ -7,13 +7,32 @@ import { ZodError } from "zod";
 import { getCurrentUser, type CurrentUser } from "@/lib/dal";
 import { ForbiddenError } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 export class ApiAuthError extends Error {}
 
-/** Use at the top of every Route Handler that requires a signed-in user. */
+export class RateLimitError extends Error {
+  constructor(message = "Too many requests. Please slow down.") {
+    super(message);
+    this.name = "RateLimitError";
+  }
+}
+
+/**
+ * Use at the top of every Route Handler that requires a signed-in user.
+ * Also enforces a generous per-user rate limit across all API routes as a
+ * defense-in-depth backstop against a runaway or abusive client.
+ */
 export async function requireApiUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) throw new ApiAuthError("Not authenticated.");
+
+  const { allowed } = rateLimit(`api:${user.id}`, {
+    limit: 300,
+    windowMs: 60_000,
+  });
+  if (!allowed) throw new RateLimitError();
+
   return user;
 }
 
@@ -59,6 +78,9 @@ export function handleApiError(error: unknown): NextResponse {
   }
   if (error instanceof BadRequestError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+  if (error instanceof RateLimitError) {
+    return NextResponse.json({ error: error.message }, { status: 429 });
   }
 
   console.error(error);
