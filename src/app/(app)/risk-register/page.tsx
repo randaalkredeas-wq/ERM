@@ -181,7 +181,7 @@ export default function RiskRegisterPage() {
   async function handleImportFile(file: File) {
     try {
       const inputs = await parseRisksFromExcel(file);
-      const count = importRisks(inputs);
+      const count = await importRisks(inputs);
       setBanner({
         tone: "success",
         message: dict.riskRegister.importSuccess.replace(
@@ -516,15 +516,20 @@ export default function RiskRegisterPage() {
                         <Pencil className="h-4 w-4" />
                         {dict.common.edit}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => duplicateRisk(risk.id)}>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          void duplicateRisk(risk.id).catch(console.error)
+                        }
+                      >
                         <Copy className="h-4 w-4" />
                         {dict.common.duplicate}
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() =>
-                          risk.isArchived
+                          void (risk.isArchived
                             ? unarchiveRisk(risk.id)
                             : archiveRisk(risk.id)
+                          ).catch(console.error)
                         }
                       >
                         {risk.isArchived ? (
@@ -599,7 +604,7 @@ export default function RiskRegisterPage() {
         risk={deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={(risk) => {
-          deleteRisk(risk.id);
+          void deleteRisk(risk.id).catch(console.error);
           setDeleteTarget(null);
         }}
       />

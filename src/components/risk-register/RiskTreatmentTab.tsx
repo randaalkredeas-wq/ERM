@@ -120,7 +120,11 @@ export function RiskTreatmentTab({ risk }: { risk: RiskItem }) {
                         variant="ghost"
                         size="icon"
                         className="text-danger"
-                        onClick={() => deleteTreatmentAction(risk.id, action.id)}
+                        onClick={() =>
+                          void deleteTreatmentAction(risk.id, action.id).catch(
+                            console.error,
+                          )
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -139,11 +143,10 @@ export function RiskTreatmentTab({ risk }: { risk: RiskItem }) {
         onOpenChange={setDialogOpen}
         action={editing}
         onSubmit={(input) => {
-          if (editing) {
-            updateTreatmentAction(risk.id, editing.id, input);
-          } else {
-            addTreatmentAction(risk.id, input);
-          }
+          const result = editing
+            ? updateTreatmentAction(risk.id, editing.id, input)
+            : addTreatmentAction(risk.id, input);
+          void result.catch(console.error);
         }}
       />
     </div>

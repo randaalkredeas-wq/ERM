@@ -3,13 +3,13 @@
 import { Thermometer } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
 import { RiskHeatMapGrid } from "@/components/charts/RiskHeatMapGrid";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { riskScore, severityFromScore, severityTone } from "@/lib/domain";
-import { risks } from "@/lib/mock-data/risks";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 
@@ -22,6 +22,7 @@ const legendItems = [
 
 export default function HeatMapPage() {
   const { dict } = useLocale();
+  const { risks } = useRiskRegister();
   const [category, setCategory] = useState("all");
   const [selected, setSelected] = useState<{
     likelihood: number;
@@ -30,13 +31,13 @@ export default function HeatMapPage() {
 
   const categories = useMemo(
     () => Array.from(new Set(risks.map((r) => r.category))),
-    [],
+    [risks],
   );
 
   const filteredRisks = useMemo(
     () =>
       category === "all" ? risks : risks.filter((r) => r.category === category),
-    [category],
+    [risks, category],
   );
 
   const cells = useMemo(() => {

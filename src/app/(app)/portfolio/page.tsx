@@ -15,7 +15,7 @@ import {
   TrendingDown,
   Wallet,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { CategoryBarChart } from "@/components/charts/CategoryBarChart";
 import { ChartCard, ChartLegendItem } from "@/components/charts/ChartCard";
@@ -43,16 +43,12 @@ import {
   PORTFOLIO_SECTORS,
   PORTFOLIO_SEGMENTS,
 } from "@/constants/portfolio";
+import { apiClient } from "@/lib/api-client";
 import { collectionStatusTone, eclStageTone } from "@/lib/domain";
 import {
-  agingBuckets,
-  creditExposures,
-  eclStageBreakdown,
   nplTrendMonthly,
   nplTrendQuarterly,
   nplTrendYearly,
-  portfolioSummary,
-  sectorConcentration,
 } from "@/lib/mock-data/portfolio";
 import {
   exportPortfolioToExcel,
@@ -60,6 +56,11 @@ import {
 } from "@/lib/portfolio-export";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type {
+  AgingBucket,
+  CreditExposure,
+  EclStage,
+} from "@/types";
 
 const PAGE_SIZE = 8;
 
@@ -72,6 +73,33 @@ const stageColors: Record<string, string> = {
 const periods = ["monthly", "quarterly", "yearly"] as const;
 type Period = (typeof periods)[number];
 
+interface PortfolioSummary {
+  totalPortfolio: number;
+  nplAmount: number;
+  nplRatio: number;
+  eclProvision: number;
+  eclCoverageRatio: number;
+  collectionRate: number;
+  overdueAmount: number;
+}
+
+interface EclStageBreakdownRow {
+  stage: EclStage;
+  exposureAmount: number;
+  eclAmount: number;
+  count: number;
+}
+
+const EMPTY_SUMMARY: PortfolioSummary = {
+  totalPortfolio: 0,
+  nplAmount: 0,
+  nplRatio: 0,
+  eclProvision: 0,
+  eclCoverageRatio: 0,
+  collectionRate: 0,
+  overdueAmount: 0,
+};
+
 export default function PortfolioPage() {
   const { dict } = useLocale();
   const [period, setPeriod] = useState<Period>("monthly");
@@ -83,6 +111,38 @@ export default function PortfolioPage() {
   const [status, setStatus] = useState("all");
   const [page, setPage] = useState(1);
   const [pdfExporting, setPdfExporting] = useState(false);
+
+  const [creditExposures, setCreditExposures] = useState<CreditExposure[]>([]);
+  const [portfolioSummary, setPortfolioSummary] =
+    useState<PortfolioSummary>(EMPTY_SUMMARY);
+  const [eclStageBreakdown, setEclStageBreakdown] = useState<
+    EclStageBreakdownRow[]
+  >([]);
+  const [sectorConcentration, setSectorConcentration] = useState<
+    { label: string; value: number }[]
+  >([]);
+  const [agingBuckets, setAgingBuckets] = useState<AgingBucket[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: CreditExposure[] }>("/api/portfolio/exposures?pageSize=200")
+      .then((res) => setCreditExposures(res.data));
+    void apiClient
+      .get<{
+        data: {
+          summary: PortfolioSummary;
+          eclStageBreakdown: EclStageBreakdownRow[];
+          sectorConcentration: { label: string; value: number }[];
+          agingBuckets: AgingBucket[];
+        };
+      }>("/api/portfolio/summary")
+      .then((res) => {
+        setPortfolioSummary(res.data.summary);
+        setEclStageBreakdown(res.data.eclStageBreakdown);
+        setSectorConcentration(res.data.sectorConcentration);
+        setAgingBuckets(res.data.agingBuckets);
+      });
+  }, []);
 
   const trendData =
     period === "monthly"
@@ -119,7 +179,7 @@ export default function PortfolioPage() {
         matchesStatus
       );
     });
-  }, [query, segment, product, sector, stage, status]);
+  }, [creditExposures, query, segment, product, sector, stage, status]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);

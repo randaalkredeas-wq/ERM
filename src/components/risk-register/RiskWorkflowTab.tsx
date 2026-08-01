@@ -4,6 +4,7 @@ import { Check, GitPullRequest, RotateCcw, Send, X, XCircle } from "lucide-react
 import { useState } from "react";
 
 import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
+import { ApiError } from "@/lib/api-client";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -18,10 +19,18 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
   const { submitForReview, approveRisk, rejectRisk, closeRisk, reopenRisk } =
     useRiskRegister();
   const [comment, setComment] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  function withComment(action: (id: string, comment?: string) => void) {
-    action(risk.id, comment);
-    setComment("");
+  async function withComment(
+    action: (id: string, comment?: string) => Promise<RiskItem>,
+  ) {
+    setError(null);
+    try {
+      await action(risk.id, comment);
+      setComment("");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Action failed.");
+    }
   }
 
   return (
@@ -45,9 +54,11 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
           placeholder={dict.riskDetail.workflow.commentPlaceholder}
         />
 
+        {error && <p className="text-danger text-sm">{error}</p>}
+
         <div className="flex flex-wrap gap-2">
           {risk.workflowStatus === "draft" && (
-            <Button size="sm" onClick={() => withComment(submitForReview)}>
+            <Button size="sm" onClick={() => void withComment(submitForReview)}>
               <Send className="h-3.5 w-3.5" />
               {dict.riskDetail.workflow.submitForReview}
             </Button>
@@ -57,7 +68,7 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
               <Button
                 size="sm"
                 variant="success"
-                onClick={() => withComment(approveRisk)}
+                onClick={() => void withComment(approveRisk)}
               >
                 <Check className="h-3.5 w-3.5" />
                 {dict.riskDetail.workflow.approve}
@@ -65,7 +76,7 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
               <Button
                 size="sm"
                 variant="danger"
-                onClick={() => withComment(rejectRisk)}
+                onClick={() => void withComment(rejectRisk)}
               >
                 <X className="h-3.5 w-3.5" />
                 {dict.riskDetail.workflow.reject}
@@ -74,14 +85,14 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
           )}
           {risk.workflowStatus === "approved" && (
             <>
-              <Button size="sm" onClick={() => withComment(closeRisk)}>
+              <Button size="sm" onClick={() => void withComment(closeRisk)}>
                 <XCircle className="h-3.5 w-3.5" />
                 {dict.riskDetail.workflow.close}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => withComment(reopenRisk)}
+                onClick={() => void withComment(reopenRisk)}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 {dict.riskDetail.workflow.reopen}
@@ -90,14 +101,14 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
           )}
           {risk.workflowStatus === "rejected" && (
             <>
-              <Button size="sm" onClick={() => withComment(submitForReview)}>
+              <Button size="sm" onClick={() => void withComment(submitForReview)}>
                 <Send className="h-3.5 w-3.5" />
                 {dict.riskDetail.workflow.submitForReview}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => withComment(reopenRisk)}
+                onClick={() => void withComment(reopenRisk)}
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 {dict.riskDetail.workflow.reopen}
@@ -108,7 +119,7 @@ export function RiskWorkflowTab({ risk }: { risk: RiskItem }) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => withComment(reopenRisk)}
+              onClick={() => void withComment(reopenRisk)}
             >
               <RotateCcw className="h-3.5 w-3.5" />
               {dict.riskDetail.workflow.reopen}

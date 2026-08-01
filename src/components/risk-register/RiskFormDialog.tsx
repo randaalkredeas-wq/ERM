@@ -28,6 +28,7 @@ import {
   REVIEW_FREQUENCY_OPTIONS,
   STRATEGIC_OBJECTIVES,
 } from "@/constants/risk-register";
+import { ApiError } from "@/lib/api-client";
 import {
   inherentScore,
   riskScore,
@@ -122,13 +123,15 @@ export function RiskFormDialog({
   onSaved,
 }: RiskFormDialogProps) {
   const { dict } = useLocale();
-  const { createRisk, updateRisk, getRisk } = useRiskRegister();
+  const { createRisk, updateRisk } = useRiskRegister();
   const isEdit = Boolean(risk);
 
   const [form, setForm] = useState<RiskFormInput>(() =>
     risk ? toFormInput(risk) : emptyForm(),
   );
   const [touched, setTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const subcategoryOptions = CATEGORY_SUBCATEGORIES[form.category] ?? [];
 
@@ -146,17 +149,27 @@ export function RiskFormDialog({
     [form],
   );
 
-  function handleSubmit() {
+  async function handleSubmit() {
     setTouched(true);
-    if (!isValid) return;
-    if (isEdit && risk) {
-      updateRisk(risk.id, form);
-      onSaved?.(getRisk(risk.id) ?? risk);
-    } else {
-      const created = createRisk(form);
-      onSaved?.(created);
+    if (!isValid || submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      if (isEdit && risk) {
+        const updated = await updateRisk(risk.id, form);
+        onSaved?.(updated);
+      } else {
+        const created = await createRisk(form);
+        onSaved?.(created);
+      }
+      onOpenChange(false);
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError ? err.message : "Failed to save the risk.",
+      );
+    } finally {
+      setSubmitting(false);
     }
-    onOpenChange(false);
   }
 
   return (
@@ -687,11 +700,15 @@ export function RiskFormDialog({
           </Tabs>
         </DialogBody>
 
+        {submitError && (
+          <p className="text-danger px-1 text-sm">{submitError}</p>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {dict.common.cancel}
           </Button>
-          <Button onClick={handleSubmit}>
+          <Button onClick={() => void handleSubmit()} disabled={submitting}>
             {isEdit
               ? dict.riskRegister.form.submitEdit
               : dict.riskRegister.form.submitCreate}

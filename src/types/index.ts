@@ -16,8 +16,6 @@ export interface RiskAttachment {
   size: string;
   uploadedBy: string;
   uploadedAt: string;
-  /** Present only for files uploaded client-side during this session. */
-  objectUrl?: string;
 }
 
 export interface RiskComment {

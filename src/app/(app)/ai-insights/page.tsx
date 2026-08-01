@@ -1,21 +1,28 @@
 "use client";
 
 import { Send, Sparkles, ThumbsDown, ThumbsUp } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { apiClient } from "@/lib/api-client";
 import { severityTone } from "@/lib/domain";
-import { aiInsights as initialInsights } from "@/lib/mock-data/notifications";
 import { formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type { AiInsightItem } from "@/types";
 
 export default function AiInsightsPage() {
   const { dict } = useLocale();
-  const [insights, setInsights] = useState(initialInsights);
+  const [insights, setInsights] = useState<AiInsightItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: AiInsightItem[] }>("/api/ai-insights?pageSize=50")
+      .then((res) => setInsights(res.data));
+  }, []);
 
   const dismiss = (id: string) =>
     setInsights((prev) => prev.filter((i) => i.id !== id));

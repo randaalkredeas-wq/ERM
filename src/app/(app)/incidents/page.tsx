@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, CheckCircle2, Clock, Plus, Siren } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -14,13 +15,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { apiClient } from "@/lib/api-client";
 import { incidentStatusTone, severityTone } from "@/lib/domain";
-import { incidents } from "@/lib/mock-data/incidents";
 import { formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type { IncidentItem } from "@/types";
 
 export default function IncidentsPage() {
   const { dict } = useLocale();
+  const [incidents, setIncidents] = useState<IncidentItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: IncidentItem[] }>("/api/incidents?pageSize=200")
+      .then((res) => setIncidents(res.data));
+  }, []);
 
   const open = incidents.filter((i) => i.status === "open").length;
   const inProgress = incidents.filter((i) => i.status === "in-progress").length;

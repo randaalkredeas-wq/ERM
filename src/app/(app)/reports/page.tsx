@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, FileBarChart2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -14,12 +15,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
-import { generatedReports, reportTemplates } from "@/lib/mock-data/reports";
+import { apiClient } from "@/lib/api-client";
 import { formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type { GeneratedReportItem, ReportTemplateItem } from "@/types";
 
 export default function ReportsPage() {
   const { dict } = useLocale();
+  const [reportTemplates, setReportTemplates] = useState<ReportTemplateItem[]>([]);
+  const [generatedReports, setGeneratedReports] = useState<GeneratedReportItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: ReportTemplateItem[] }>("/api/reports/templates")
+      .then((res) => setReportTemplates(res.data));
+    void apiClient
+      .get<{ data: GeneratedReportItem[] }>("/api/reports/generated?pageSize=50")
+      .then((res) => setGeneratedReports(res.data));
+  }, []);
 
   return (
     <div className="space-y-6">

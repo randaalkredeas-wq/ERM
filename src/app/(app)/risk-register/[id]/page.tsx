@@ -42,7 +42,7 @@ export default function RiskDetailPage({
 }) {
   const { id } = use(params);
   const { dict } = useLocale();
-  const { getRisk, deleteRisk, duplicateRisk, archiveRisk, unarchiveRisk } =
+  const { getRisk, deleteRisk, duplicateRisk, archiveRisk, unarchiveRisk, loading } =
     useRiskRegister();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
@@ -52,7 +52,7 @@ export default function RiskDetailPage({
 
   const risk = getRisk(id);
   if (!risk) {
-    if (!leaving) {
+    if (!loading && !leaving) {
       notFound();
     }
     return null;
@@ -99,8 +99,9 @@ export default function RiskDetailPage({
             variant="outline"
             size="sm"
             onClick={() => {
-              const duplicated = duplicateRisk(risk.id);
-              if (duplicated) router.push(`/risk-register/${duplicated.id}`);
+              void duplicateRisk(risk.id).then((duplicated) => {
+                router.push(`/risk-register/${duplicated.id}`);
+              });
             }}
           >
             <Copy className="h-4 w-4" />
@@ -110,7 +111,9 @@ export default function RiskDetailPage({
             variant="outline"
             size="sm"
             onClick={() =>
-              risk.isArchived ? unarchiveRisk(risk.id) : archiveRisk(risk.id)
+              void (risk.isArchived
+                ? unarchiveRisk(risk.id)
+                : archiveRisk(risk.id))
             }
           >
             {risk.isArchived ? (
@@ -371,7 +374,7 @@ export default function RiskDetailPage({
           setLeaving(true);
           setDeleteOpen(false);
           router.push("/risk-register");
-          deleteRisk(target.id);
+          void deleteRisk(target.id);
         }}
       />
     </div>

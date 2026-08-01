@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Sparkline } from "@/components/charts/Sparkline";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -8,10 +9,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
+import { apiClient } from "@/lib/api-client";
 import { kriStatusTone } from "@/lib/domain";
-import { kris } from "@/lib/mock-data/kri";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type { KriItem } from "@/types";
 
 const statusChartColor: Record<string, string> = {
   "on-track": "var(--success)",
@@ -21,6 +23,13 @@ const statusChartColor: Record<string, string> = {
 
 export default function KriKpiPage() {
   const { dict } = useLocale();
+  const [kris, setKris] = useState<KriItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: KriItem[] }>("/api/kri?pageSize=100")
+      .then((res) => setKris(res.data));
+  }, []);
 
   return (
     <div className="space-y-6">

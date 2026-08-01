@@ -11,7 +11,7 @@ import {
   ShieldPlus,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
 import { CategoryBarChart } from "@/components/charts/CategoryBarChart";
@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { apiClient } from "@/lib/api-client";
 import {
   incidentStatusTone,
   isTreatmentActionOverdue,
@@ -38,16 +39,14 @@ import {
   severityFromScore,
   severityTone,
 } from "@/lib/domain";
-import { approvals } from "@/lib/mock-data/approvals";
-import { incidents } from "@/lib/mock-data/incidents";
 import {
-  riskCategoryBreakdown,
   riskTrend,
   riskTrendQuarterly,
   riskTrendYearly,
 } from "@/lib/mock-data/risks";
 import { cn, formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type { ApprovalItem, IncidentItem } from "@/types";
 
 const donutColors = [
   "var(--chart-1)",
@@ -65,6 +64,17 @@ export default function DashboardPage() {
   const { dict, locale } = useLocale();
   const { risks } = useRiskRegister();
   const [period, setPeriod] = useState<Period>("monthly");
+  const [incidents, setIncidents] = useState<IncidentItem[]>([]);
+  const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: IncidentItem[] }>("/api/incidents?pageSize=200")
+      .then((res) => setIncidents(res.data));
+    void apiClient
+      .get<{ data: ApprovalItem[] }>("/api/approvals?status=pending&pageSize=200")
+      .then((res) => setApprovals(res.data));
+  }, []);
 
   const activeRisks = risks.filter((r) => !r.isArchived);
   const openIncidents = incidents.filter((i) => i.status !== "resolved");
@@ -88,11 +98,20 @@ export default function DashboardPage() {
     0,
   );
 
-  const categoryData = riskCategoryBreakdown.map((c, i) => ({
-    name: c.label,
-    value: c.value,
-    color: donutColors[i % donutColors.length],
-  }));
+  const categoryCounts = new Map<string, number>();
+  for (const risk of activeRisks) {
+    categoryCounts.set(
+      risk.category,
+      (categoryCounts.get(risk.category) ?? 0) + 1,
+    );
+  }
+  const categoryData = Array.from(categoryCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, value], i) => ({
+      name,
+      value,
+      color: donutColors[i % donutColors.length],
+    }));
 
   const departmentCounts = new Map<string, number>();
   for (const risk of activeRisks) {

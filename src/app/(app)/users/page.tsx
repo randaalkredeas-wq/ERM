@@ -1,6 +1,7 @@
 "use client";
 
 import { ShieldCheck, UserPlus, Users as UsersIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
@@ -15,13 +16,21 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/Table";
+import { apiClient } from "@/lib/api-client";
 import { userStatusTone } from "@/lib/domain";
-import { users } from "@/lib/mock-data/users";
 import { formatDate, getInitials } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import type { UserItem } from "@/types";
 
 export default function UsersPage() {
   const { dict } = useLocale();
+  const [users, setUsers] = useState<UserItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: UserItem[] }>("/api/users?pageSize=200")
+      .then((res) => setUsers(res.data));
+  }, []);
 
   const active = users.filter((u) => u.status === "active").length;
   const admins = users.filter(

@@ -20,7 +20,7 @@ export function RiskCommentsTab({ risk }: { risk: RiskItem }) {
 
   function handlePost() {
     if (!message.trim()) return;
-    addComment(risk.id, message);
+    void addComment(risk.id, message).catch(console.error);
     setMessage("");
   }
 

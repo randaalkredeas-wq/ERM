@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Smartphone,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
@@ -18,20 +19,43 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { auditLog } from "@/lib/mock-data/audit-log";
+import { apiClient } from "@/lib/api-client";
+import type { CurrentUser } from "@/lib/dal";
+import { ROLE_LABELS } from "@/lib/role-labels";
+import { formatDate, getInitials } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
-
-const infoItems = [
-  { icon: Mail, label: "email", value: "layla.haddad@ermcorp.com" },
-  { icon: Phone, label: "phone", value: "+966 55 123 4567" },
-  { icon: Building2, label: "department", value: "Risk & Compliance" },
-  { icon: MapPin, label: "location", value: "Riyadh, Saudi Arabia" },
-  { icon: Calendar, label: "joined", value: "March 2021" },
-] as const;
+import type { AuditLogEntry } from "@/types";
 
 export default function ProfilePage() {
   const { dict } = useLocale();
-  const activity = auditLog.filter((entry) => entry.user === "Layla Haddad");
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [activity, setActivity] = useState<AuditLogEntry[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: CurrentUser }>("/api/me")
+      .then((res) => {
+        setUser(res.data);
+        return apiClient.get<{ data: AuditLogEntry[] }>(
+          `/api/audit-log?userId=${res.data.id}&pageSize=20`,
+        );
+      })
+      .then((res) => setActivity(res.data));
+  }, []);
+
+  if (!user) return null;
+
+  const infoItems = [
+    { icon: Mail, label: "email" as const, value: user.email },
+    { icon: Phone, label: "phone" as const, value: user.phone || "—" },
+    { icon: Building2, label: "department" as const, value: user.department || "—" },
+    { icon: MapPin, label: "location" as const, value: user.location || "—" },
+    {
+      icon: Calendar,
+      label: "joined" as const,
+      value: formatDate(user.createdAt, dict.meta.locale),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -48,15 +72,19 @@ export default function ProfilePage() {
 
       <Card className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-start">
         <Avatar className="h-20 w-20">
-          <AvatarFallback className="text-xl">LH</AvatarFallback>
+          <AvatarFallback className="text-xl">
+            {getInitials(user.name)}
+          </AvatarFallback>
         </Avatar>
         <div>
           <h2 className="text-foreground text-xl font-semibold">
-            Layla Haddad
+            {user.name}
           </h2>
-          <p className="text-muted text-sm">Chief Risk Officer</p>
+          <p className="text-muted text-sm">
+            {user.jobTitle || ROLE_LABELS[user.role]}
+          </p>
           <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
-            <Badge tone="primary">Risk & Compliance</Badge>
+            {user.department && <Badge tone="primary">{user.department}</Badge>}
             <Badge tone="success" dot>
               {dict.common.active}
             </Badge>
@@ -88,11 +116,7 @@ export default function ProfilePage() {
                   </span>
                   <div>
                     <p className="text-muted text-xs">
-                      {
-                        dict.profile[
-                          item.label as keyof typeof dict.profile
-                        ] as string
-                      }
+                      {dict.profile[item.label]}
                     </p>
                     <p className="text-foreground text-sm font-medium">
                       {item.value}

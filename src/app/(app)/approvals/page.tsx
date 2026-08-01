@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Badge } from "@/components/ui/Badge";
@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
-import { approvals as initialApprovals } from "@/lib/mock-data/approvals";
+import { apiClient } from "@/lib/api-client";
 import { formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 import type { ApprovalItem, ApprovalStatus } from "@/types";
@@ -28,12 +28,21 @@ const priorityTone = {
 
 export default function ApprovalsPage() {
   const { dict } = useLocale();
-  const [approvals, setApprovals] = useState<ApprovalItem[]>(initialApprovals);
+  const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
+
+  useEffect(() => {
+    void apiClient
+      .get<{ data: ApprovalItem[] }>("/api/approvals?pageSize=200")
+      .then((res) => setApprovals(res.data));
+  }, []);
 
   const updateStatus = (id: string, status: ApprovalStatus) => {
     setApprovals((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status } : a)),
     );
+    void apiClient
+      .patch<{ data: ApprovalItem }>(`/api/approvals/${id}`, { status })
+      .catch(console.error);
   };
 
   const renderTable = (items: ApprovalItem[], showActions: boolean) => (

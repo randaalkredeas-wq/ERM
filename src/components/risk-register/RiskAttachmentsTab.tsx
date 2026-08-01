@@ -11,9 +11,10 @@ import {
   Upload,
   type LucideIcon,
 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
+import { ApiError } from "@/lib/api-client";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -39,38 +40,22 @@ const typeMeta: Record<
   other: { icon: File, className: "bg-surface-2 text-muted" },
 };
 
-function inferType(fileName: string): AttachmentType {
-  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
-  if (ext === "pdf") return "pdf";
-  if (["doc", "docx"].includes(ext)) return "doc";
-  if (["xls", "xlsx", "csv"].includes(ext)) return "xls";
-  if (["ppt", "pptx"].includes(ext)) return "ppt";
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext))
-    return "image";
-  return "other";
-}
-
-function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 export function RiskAttachmentsTab({ risk }: { risk: RiskItem }) {
   const { dict } = useLocale();
   const { addAttachment, removeAttachment } = useRiskRegister();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleFiles(files: FileList | null) {
+  async function handleFiles(files: FileList | null) {
     if (!files) return;
-    Array.from(files).forEach((file) => {
-      addAttachment(risk.id, {
-        name: file.name,
-        type: inferType(file.name),
-        size: formatSize(file.size),
-        objectUrl: URL.createObjectURL(file),
-      });
-    });
+    setError(null);
+    for (const file of Array.from(files)) {
+      try {
+        await addAttachment(risk.id, file);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Upload failed.");
+      }
+    }
   }
 
   return (
@@ -85,7 +70,7 @@ export function RiskAttachmentsTab({ risk }: { risk: RiskItem }) {
           multiple
           className="hidden"
           onChange={(e) => {
-            handleFiles(e.target.files);
+            void handleFiles(e.target.files);
             e.target.value = "";
           }}
         />
@@ -94,6 +79,8 @@ export function RiskAttachmentsTab({ risk }: { risk: RiskItem }) {
           {dict.riskDetail.attachments.upload}
         </Button>
       </div>
+
+      {error && <p className="text-danger mb-3 text-sm">{error}</p>}
 
       {risk.attachments.length === 0 ? (
         <EmptyState
@@ -131,25 +118,16 @@ export function RiskAttachmentsTab({ risk }: { risk: RiskItem }) {
                 key={attachment.id}
                 className="border-border flex items-center gap-3 rounded-xl border p-3"
               >
-                {attachment.objectUrl ? (
-                  <a
-                    href={attachment.objectUrl}
-                    download={attachment.name}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex min-w-0 flex-1 items-center gap-3"
-                  >
-                    {body}
-                  </a>
-                ) : (
-                  <div className="flex min-w-0 flex-1 items-center gap-3">
-                    {body}
-                  </div>
-                )}
+                <a
+                  href={`/api/risks/${risk.id}/attachments/${attachment.id}/download`}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
+                  {body}
+                </a>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => removeAttachment(risk.id, attachment.id)}
+                  onClick={() => void removeAttachment(risk.id, attachment.id)}
                 >
                   <Trash2 className="text-danger h-4 w-4" />
                   <span className="sr-only">
