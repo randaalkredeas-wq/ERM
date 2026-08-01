@@ -5,17 +5,101 @@ export interface NavItem {
 
 export type Severity = "low" | "medium" | "high" | "critical";
 
-export type RiskStatus = "open" | "mitigating" | "closed";
+export type RiskStatus = "open" | "mitigating" | "closed" | "pending-approval";
+
+export type AttachmentType = "pdf" | "doc" | "xls" | "ppt" | "image" | "other";
+
+export interface RiskAttachment {
+  id: string;
+  name: string;
+  type: AttachmentType;
+  size: string;
+  uploadedBy: string;
+  uploadedAt: string;
+  /** Present only for files uploaded client-side during this session. */
+  objectUrl?: string;
+}
+
+export interface RiskComment {
+  id: string;
+  author: string;
+  authorInitials: string;
+  message: string;
+  createdAt: string;
+}
+
+export type RiskApprovalStepStatus =
+  "waiting" | "pending" | "approved" | "rejected";
+
+export interface RiskApprovalStep {
+  id: string;
+  role: string;
+  approver: string;
+  status: RiskApprovalStepStatus;
+  date?: string;
+  comment?: string;
+}
+
+export interface RiskAuditEntry {
+  id: string;
+  timestamp: string;
+  user: string;
+  action: string;
+  details: string;
+}
+
+export interface RiskVersion {
+  id: string;
+  version: number;
+  editedBy: string;
+  editedAt: string;
+  summary: string;
+  snapshot: {
+    title: string;
+    status: RiskStatus;
+    likelihood: number;
+    impact: number;
+    inherentRisk: Severity;
+  };
+}
 
 export interface RiskItem {
   id: string;
   title: string;
+  department: string;
   category: string;
+  subcategory: string;
+  rootCause: string;
+  existingControls: string;
+  inherentRisk: Severity;
   owner: string;
   likelihood: number;
   impact: number;
   status: RiskStatus;
+  dueDate: string;
+  createdBy: string;
+  createdAt: string;
   updatedAt: string;
+  attachments: RiskAttachment[];
+  comments: RiskComment[];
+  approvals: RiskApprovalStep[];
+  auditTrail: RiskAuditEntry[];
+  versions: RiskVersion[];
+}
+
+export interface RiskFormInput {
+  title: string;
+  department: string;
+  category: string;
+  subcategory: string;
+  rootCause: string;
+  existingControls: string;
+  inherentRisk: Severity;
+  owner: string;
+  likelihood: number;
+  impact: number;
+  status: RiskStatus;
+  dueDate: string;
 }
 
 export type IncidentStatus = "open" | "in-progress" | "resolved";

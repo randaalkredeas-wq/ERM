@@ -3,11 +3,18 @@ import type {
   ApprovalStatus,
   IncidentStatus,
   KriStatus,
+  RiskApprovalStepStatus,
   RiskItem,
   RiskStatus,
   Severity,
   UserStatus,
 } from "@/types";
+
+export const CURRENT_USER = {
+  name: "Layla Haddad",
+  initials: "LH",
+  role: "Chief Risk Officer",
+};
 
 export function riskScore(risk: Pick<RiskItem, "likelihood" | "impact">) {
   return risk.likelihood * risk.impact;
@@ -31,6 +38,7 @@ export const riskStatusTone: Record<RiskStatus, BadgeTone> = {
   open: "warning",
   mitigating: "info",
   closed: "success",
+  "pending-approval": "primary",
 };
 
 export const incidentStatusTone: Record<IncidentStatus, BadgeTone> = {
@@ -56,3 +64,11 @@ export const userStatusTone: Record<UserStatus, BadgeTone> = {
   inactive: "neutral",
   invited: "info",
 };
+
+export const approvalStepStatusTone: Record<RiskApprovalStepStatus, BadgeTone> =
+  {
+    waiting: "neutral",
+    pending: "warning",
+    approved: "success",
+    rejected: "danger",
+  };
