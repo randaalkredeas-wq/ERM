@@ -5,7 +5,7 @@ export interface NavItem {
 
 export type Severity = "low" | "medium" | "high" | "critical";
 
-export type RiskStatus = "open" | "mitigating" | "closed" | "pending-approval";
+export type RiskStatus = "open" | "mitigating" | "closed";
 
 export type AttachmentType = "pdf" | "doc" | "xls" | "ppt" | "image" | "other";
 
@@ -28,24 +28,54 @@ export interface RiskComment {
   createdAt: string;
 }
 
-export type RiskApprovalStepStatus =
-  "waiting" | "pending" | "approved" | "rejected";
-
-export interface RiskApprovalStep {
-  id: string;
-  role: string;
-  approver: string;
-  status: RiskApprovalStepStatus;
-  date?: string;
-  comment?: string;
-}
-
 export interface RiskAuditEntry {
   id: string;
   timestamp: string;
   user: string;
   action: string;
   details: string;
+}
+
+export type ControlEffectiveness =
+  | "ineffective"
+  | "partially-effective"
+  | "effective"
+  | "highly-effective";
+
+export type RiskTreatmentStrategy = "accept" | "mitigate" | "transfer" | "avoid";
+
+export type ReviewFrequency = "monthly" | "quarterly" | "semi-annual" | "annual";
+
+export type RiskAppetiteStatus =
+  | "within-appetite"
+  | "near-limit"
+  | "exceeds-appetite";
+
+export type RiskWorkflowStatus =
+  | "draft"
+  | "under-review"
+  | "approved"
+  | "rejected"
+  | "closed";
+
+export interface WorkflowTransition {
+  id: string;
+  fromStatus: RiskWorkflowStatus;
+  toStatus: RiskWorkflowStatus;
+  actor: string;
+  comment?: string;
+  timestamp: string;
+}
+
+export type TreatmentActionStatus = "not-started" | "in-progress" | "completed";
+
+export interface TreatmentAction {
+  id: string;
+  title: string;
+  owner: string;
+  dueDate: string;
+  status: TreatmentActionStatus;
+  progress: number;
 }
 
 export interface RiskVersion {
@@ -57,47 +87,78 @@ export interface RiskVersion {
   snapshot: {
     title: string;
     status: RiskStatus;
+    workflowStatus: RiskWorkflowStatus;
     likelihood: number;
     impact: number;
     inherentRisk: Severity;
+    targetRisk: Severity;
   };
 }
 
 export interface RiskItem {
   id: string;
   title: string;
+  description: string;
   department: string;
   category: string;
   subcategory: string;
+  riskSource: string;
+  riskType: string;
+  strategicObjective: string;
   rootCause: string;
+  consequences: string;
   existingControls: string;
+  controlEffectiveness: ControlEffectiveness;
+  inherentLikelihood: number;
+  inherentImpact: number;
   inherentRisk: Severity;
-  owner: string;
   likelihood: number;
   impact: number;
+  targetLikelihood: number;
+  targetImpact: number;
+  targetRisk: Severity;
+  riskTreatment: RiskTreatmentStrategy;
+  reviewFrequency: ReviewFrequency;
+  nextReviewDate: string;
+  owner: string;
   status: RiskStatus;
+  workflowStatus: RiskWorkflowStatus;
+  workflowHistory: WorkflowTransition[];
   dueDate: string;
+  isArchived: boolean;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
   attachments: RiskAttachment[];
   comments: RiskComment[];
-  approvals: RiskApprovalStep[];
+  treatmentPlans: TreatmentAction[];
   auditTrail: RiskAuditEntry[];
   versions: RiskVersion[];
 }
 
 export interface RiskFormInput {
   title: string;
+  description: string;
   department: string;
   category: string;
   subcategory: string;
+  riskSource: string;
+  riskType: string;
+  strategicObjective: string;
   rootCause: string;
+  consequences: string;
   existingControls: string;
-  inherentRisk: Severity;
-  owner: string;
+  controlEffectiveness: ControlEffectiveness;
+  inherentLikelihood: number;
+  inherentImpact: number;
   likelihood: number;
   impact: number;
+  targetLikelihood: number;
+  targetImpact: number;
+  riskTreatment: RiskTreatmentStrategy;
+  reviewFrequency: ReviewFrequency;
+  nextReviewDate: string;
+  owner: string;
   status: RiskStatus;
   dueDate: string;
 }

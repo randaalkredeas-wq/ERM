@@ -26,7 +26,7 @@ export function Breadcrumbs() {
   return (
     <nav
       aria-label="Breadcrumb"
-      className="border-border text-muted flex items-center gap-1.5 border-b px-4 py-3 text-sm sm:px-6"
+      className="border-border text-muted print:hidden flex items-center gap-1.5 border-b px-4 py-3 text-sm sm:px-6"
     >
       <Link
         href="/dashboard"

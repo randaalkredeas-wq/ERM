@@ -78,9 +78,19 @@ export function RiskVersionsTab({ risk }: { risk: RiskItem }) {
                       dict.common[
                         version.snapshot.status === "mitigating"
                           ? "inProgress"
-                          : version.snapshot.status === "pending-approval"
-                            ? "pending"
-                            : version.snapshot.status
+                          : version.snapshot.status
+                      ]
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted">
+                    {dict.riskRegister.columns.workflowStatus}
+                  </p>
+                  <p className="text-foreground mt-0.5 font-medium">
+                    {
+                      dict.riskRegister.enums.workflowStatus[
+                        version.snapshot.workflowStatus
                       ]
                     }
                   </p>
@@ -103,6 +113,17 @@ export function RiskVersionsTab({ risk }: { risk: RiskItem }) {
                     className="mt-0.5"
                   >
                     {dict.common[version.snapshot.inherentRisk]}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-muted">
+                    {dict.riskRegister.columns.targetRisk}
+                  </p>
+                  <Badge
+                    tone={severityTone[version.snapshot.targetRisk]}
+                    className="mt-0.5"
+                  >
+                    {dict.common[version.snapshot.targetRisk]}
                   </Badge>
                 </div>
               </div>

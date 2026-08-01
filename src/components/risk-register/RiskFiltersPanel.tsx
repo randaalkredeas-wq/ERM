@@ -4,24 +4,29 @@ import { useMemo } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import {
   CATEGORY_SUBCATEGORIES,
   DEPARTMENTS,
   RISK_CATEGORIES,
   RISK_OWNERS,
+  WORKFLOW_STATUSES,
 } from "@/constants/risk-register";
 import { useLocale } from "@/providers/locale-provider";
-import type { RiskStatus, Severity } from "@/types";
+import type { RiskStatus, RiskWorkflowStatus, Severity } from "@/types";
 
 export interface RiskFilterState {
   department: string;
   category: string;
   subcategory: string;
   status: RiskStatus | "all";
+  workflowStatus: RiskWorkflowStatus | "all";
   inherentRisk: Severity | "all";
   residualRisk: Severity | "all";
   owner: string;
+  dueDateFrom: string;
+  dueDateTo: string;
 }
 
 export const emptyRiskFilters: RiskFilterState = {
@@ -29,9 +34,12 @@ export const emptyRiskFilters: RiskFilterState = {
   category: "all",
   subcategory: "all",
   status: "all",
+  workflowStatus: "all",
   inherentRisk: "all",
   residualRisk: "all",
   owner: "all",
+  dueDateFrom: "",
+  dueDateTo: "",
 };
 
 interface RiskFiltersPanelProps {
@@ -147,8 +155,29 @@ export function RiskFiltersPanel({ filters, onChange }: RiskFiltersPanelProps) {
           <option value="all">{dict.common.all}</option>
           <option value="open">{dict.common.open}</option>
           <option value="mitigating">{dict.common.inProgress}</option>
-          <option value="pending-approval">{dict.common.pending}</option>
           <option value="closed">{dict.common.closed}</option>
+        </Select>
+      </div>
+
+      <div>
+        <label className="text-muted mb-1.5 block text-xs font-medium">
+          {dict.riskRegister.columns.workflowStatus}
+        </label>
+        <Select
+          value={filters.workflowStatus}
+          onChange={(e) =>
+            set(
+              "workflowStatus",
+              e.target.value as RiskFilterState["workflowStatus"],
+            )
+          }
+        >
+          <option value="all">{dict.riskRegister.allWorkflowStatuses}</option>
+          {WORKFLOW_STATUSES.map((w) => (
+            <option key={w} value={w}>
+              {dict.riskRegister.enums.workflowStatus[w]}
+            </option>
+          ))}
         </Select>
       </div>
 
@@ -194,6 +223,28 @@ export function RiskFiltersPanel({ filters, onChange }: RiskFiltersPanelProps) {
             </option>
           ))}
         </Select>
+      </div>
+
+      <div>
+        <label className="text-muted mb-1.5 block text-xs font-medium">
+          {dict.riskRegister.dateFrom}
+        </label>
+        <Input
+          type="date"
+          value={filters.dueDateFrom}
+          onChange={(e) => set("dueDateFrom", e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="text-muted mb-1.5 block text-xs font-medium">
+          {dict.riskRegister.dateTo}
+        </label>
+        <Input
+          type="date"
+          value={filters.dueDateTo}
+          onChange={(e) => set("dueDateTo", e.target.value)}
+        />
       </div>
 
       <div className="flex items-end">

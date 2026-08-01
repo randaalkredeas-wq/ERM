@@ -1,15 +1,20 @@
 "use client";
 
 import {
+  AlertOctagon,
   AlertTriangle,
-  CheckSquare,
+  ClipboardX,
   FilePlus2,
-  Gauge,
+  Flame,
+  Printer,
   ShieldAlert,
   ShieldPlus,
 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
+import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
+import { CategoryBarChart } from "@/components/charts/CategoryBarChart";
 import { ChartCard, ChartLegendItem } from "@/components/charts/ChartCard";
 import { DonutChart } from "@/components/charts/DonutChart";
 import { TrendAreaChart } from "@/components/charts/TrendAreaChart";
@@ -28,14 +33,20 @@ import {
 } from "@/components/ui/Table";
 import {
   incidentStatusTone,
+  isTreatmentActionOverdue,
   riskScore,
   severityFromScore,
   severityTone,
 } from "@/lib/domain";
 import { approvals } from "@/lib/mock-data/approvals";
 import { incidents } from "@/lib/mock-data/incidents";
-import { riskCategoryBreakdown, riskTrend, risks } from "@/lib/mock-data/risks";
-import { formatDate } from "@/lib/utils";
+import {
+  riskCategoryBreakdown,
+  riskTrend,
+  riskTrendQuarterly,
+  riskTrendYearly,
+} from "@/lib/mock-data/risks";
+import { cn, formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 
 const donutColors = [
@@ -47,23 +58,60 @@ const donutColors = [
   "#f472b6",
 ];
 
+const periods = ["monthly", "quarterly", "yearly"] as const;
+type Period = (typeof periods)[number];
+
 export default function DashboardPage() {
   const { dict, locale } = useLocale();
+  const { risks } = useRiskRegister();
+  const [period, setPeriod] = useState<Period>("monthly");
 
+  const activeRisks = risks.filter((r) => !r.isArchived);
   const openIncidents = incidents.filter((i) => i.status !== "resolved");
   const pendingApprovals = approvals.filter((a) => a.status === "pending");
-  const topRisks = [...risks]
+  const topRisks = [...activeRisks]
     .sort((a, b) => riskScore(b) - riskScore(a))
     .slice(0, 5);
   const recentIncidents = [...incidents]
     .sort((a, b) => (a.reportedAt < b.reportedAt ? 1 : -1))
     .slice(0, 5);
 
+  const highCount = activeRisks.filter(
+    (r) => severityFromScore(riskScore(r)) === "high",
+  ).length;
+  const criticalCount = activeRisks.filter(
+    (r) => severityFromScore(riskScore(r)) === "critical",
+  ).length;
+  const overdueActionsCount = activeRisks.reduce(
+    (sum, r) =>
+      sum + r.treatmentPlans.filter(isTreatmentActionOverdue).length,
+    0,
+  );
+
   const categoryData = riskCategoryBreakdown.map((c, i) => ({
     name: c.label,
     value: c.value,
     color: donutColors[i % donutColors.length],
   }));
+
+  const departmentCounts = new Map<string, number>();
+  for (const risk of activeRisks) {
+    if (risk.status === "closed") continue;
+    departmentCounts.set(
+      risk.department,
+      (departmentCounts.get(risk.department) ?? 0) + 1,
+    );
+  }
+  const departmentData = Array.from(departmentCounts.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value);
+
+  const trendData =
+    period === "monthly"
+      ? riskTrend
+      : period === "quarterly"
+        ? riskTrendQuarterly
+        : riskTrendYearly;
 
   return (
     <div className="space-y-6">
@@ -90,58 +138,44 @@ export default function DashboardPage() {
                 {dict.dashboard.generateReport}
               </Link>
             </Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="h-4 w-4" />
+              {dict.riskRegister.print}
+            </Button>
           </>
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
           label={dict.dashboard.kpi.totalRisks}
-          value={String(risks.length)}
+          value={String(activeRisks.length)}
           icon={ShieldAlert}
           tone="primary"
-          delta={{
-            value: "+4",
-            direction: "up",
-            positive: false,
-            caption: dict.common.thisMonth,
-          }}
+        />
+        <StatCard
+          label={dict.dashboard.kpi.highRisks}
+          value={String(highCount)}
+          icon={Flame}
+          tone="warning"
+        />
+        <StatCard
+          label={dict.dashboard.kpi.criticalRisks}
+          value={String(criticalCount)}
+          icon={AlertOctagon}
+          tone="danger"
+        />
+        <StatCard
+          label={dict.dashboard.kpi.overdueActions}
+          value={String(overdueActionsCount)}
+          icon={ClipboardX}
+          tone="danger"
         />
         <StatCard
           label={dict.dashboard.kpi.openIncidents}
           value={String(openIncidents.length)}
           icon={AlertTriangle}
-          tone="danger"
-          delta={{
-            value: "-2",
-            direction: "down",
-            positive: true,
-            caption: dict.common.thisMonth,
-          }}
-        />
-        <StatCard
-          label={dict.dashboard.kpi.pendingApprovals}
-          value={String(pendingApprovals.length)}
-          icon={CheckSquare}
           tone="warning"
-          delta={{
-            value: "+1",
-            direction: "up",
-            positive: false,
-            caption: dict.common.thisWeek,
-          }}
-        />
-        <StatCard
-          label={dict.dashboard.kpi.complianceScore}
-          value="87%"
-          icon={Gauge}
-          tone="success"
-          delta={{
-            value: "+3%",
-            direction: "up",
-            positive: true,
-            caption: dict.common.thisQuarter,
-          }}
         />
       </div>
 
@@ -150,8 +184,27 @@ export default function DashboardPage() {
           title={dict.dashboard.riskTrend}
           subtitle={dict.dashboard.riskTrendSubtitle}
           className="lg:col-span-2"
+          actions={
+            <div className="border-border bg-surface-2 print:hidden inline-flex items-center gap-1 rounded-lg border p-1">
+              {periods.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeriod(p)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                    period === p
+                      ? "bg-surface text-foreground shadow-sm"
+                      : "text-muted hover:text-foreground",
+                  )}
+                >
+                  {dict.dashboard.period[p]}
+                </button>
+              ))}
+            </div>
+          }
         >
-          <TrendAreaChart data={riskTrend} />
+          <TrendAreaChart data={trendData} />
         </ChartCard>
         <ChartCard
           title={dict.dashboard.riskByCategory}
@@ -163,6 +216,13 @@ export default function DashboardPage() {
           <DonutChart data={categoryData} />
         </ChartCard>
       </div>
+
+      <ChartCard
+        title={dict.dashboard.riskByDepartment}
+        subtitle={dict.dashboard.riskByDepartmentSubtitle}
+      >
+        <CategoryBarChart data={departmentData} horizontal color="var(--chart-2)" />
+      </ChartCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-0">
@@ -221,7 +281,12 @@ export default function DashboardPage() {
                 return (
                   <TableRow key={risk.id}>
                     <TableCell className="text-foreground max-w-56 truncate font-medium">
-                      {risk.title}
+                      <Link
+                        href={`/risk-register/${risk.id}`}
+                        className="hover:text-primary hover:underline"
+                      >
+                        {risk.title}
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <Badge tone={severityTone[severityFromScore(score)]}>

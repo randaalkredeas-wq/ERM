@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  AlertTriangle,
   Bell,
+  CalendarClock,
   KeyRound,
   LogOut,
   Menu,
@@ -11,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
@@ -25,7 +28,12 @@ import {
 import { Input } from "@/components/ui/Input";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { notifications } from "@/lib/mock-data/notifications";
+import { isReviewDue, isTreatmentActionOverdue } from "@/lib/domain";
+import {
+  markAllNotificationsRead,
+  markNotificationRead,
+  useNotifications,
+} from "@/lib/notifications-store";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 
@@ -40,10 +48,23 @@ const toneDot: Record<string, string> = {
 export function Topbar() {
   const { setMobileOpen } = useSidebar();
   const { dict } = useLocale();
+  const notifications = useNotifications();
+  const { risks } = useRiskRegister();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const activeRisks = risks.filter((r) => !r.isArchived && r.status !== "closed");
+  const today = new Date().toISOString().slice(0, 10);
+  const overdueRisksCount = activeRisks.filter((r) => r.dueDate < today).length;
+  const overdueActionsCount = activeRisks.reduce(
+    (sum, r) => sum + r.treatmentPlans.filter(isTreatmentActionOverdue).length,
+    0,
+  );
+  const reviewsDueCount = activeRisks.filter((r) => isReviewDue(r)).length;
+  const hasReminders =
+    overdueRisksCount > 0 || overdueActionsCount > 0 || reviewsDueCount > 0;
+
   return (
-    <header className="glass border-border sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
+    <header className="glass border-border print:hidden sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
@@ -72,7 +93,7 @@ export function Topbar() {
               className="text-muted hover:bg-surface-2 hover:text-foreground relative flex h-9 w-9 items-center justify-center rounded-full transition-colors"
             >
               <Bell className="h-[18px] w-[18px]" />
-              {unreadCount > 0 && (
+              {(unreadCount > 0 || hasReminders) && (
                 <span className="bg-danger ring-background absolute end-1.5 top-1.5 flex h-2 w-2 rounded-full ring-2" />
               )}
             </button>
@@ -85,41 +106,99 @@ export function Topbar() {
               {unreadCount > 0 && <Badge tone="primary">{unreadCount}</Badge>}
             </div>
             <DropdownMenuSeparator />
-            <div className="max-h-80 scrollbar-thin space-y-0.5 overflow-y-auto">
-              {notifications.map((n) => (
-                <DropdownMenuItem
-                  key={n.id}
-                  className="flex-col items-start gap-1 py-2.5"
-                >
-                  <div className="flex w-full items-start gap-2">
-                    <span
-                      className={cn(
-                        "mt-1.5 h-2 w-2 shrink-0 rounded-full",
-                        toneDot[n.tone],
-                        n.read && "opacity-30",
-                      )}
-                    />
-                    <div className="flex-1">
-                      <p
+            {notifications.length === 0 ? (
+              <p className="text-muted px-2.5 py-4 text-center text-sm">
+                {dict.common.noNotifications}
+              </p>
+            ) : (
+              <div className="max-h-72 scrollbar-thin space-y-0.5 overflow-y-auto">
+                {notifications.map((n) => (
+                  <DropdownMenuItem
+                    key={n.id}
+                    className="flex-col items-start gap-1 py-2.5"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      markNotificationRead(n.id);
+                    }}
+                  >
+                    <div className="flex w-full items-start gap-2">
+                      <span
                         className={cn(
-                          "text-sm",
-                          n.read ? "text-muted" : "text-foreground font-medium",
+                          "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+                          toneDot[n.tone],
+                          n.read && "opacity-30",
                         )}
-                      >
-                        {n.title}
-                      </p>
-                      <p className="text-muted mt-0.5 text-xs">
-                        {n.description}
-                      </p>
-                      <p className="text-muted mt-1 text-[11px]">{n.time}</p>
+                      />
+                      <div className="flex-1">
+                        <p
+                          className={cn(
+                            "text-sm",
+                            n.read ? "text-muted" : "text-foreground font-medium",
+                          )}
+                        >
+                          {n.title}
+                        </p>
+                        <p className="text-muted mt-0.5 text-xs">
+                          {n.description}
+                        </p>
+                        <p className="text-muted mt-1 text-[11px]">{n.time}</p>
+                      </div>
                     </div>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </div>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            )}
+            {hasReminders && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-muted px-2.5 py-1 text-xs">
+                  {dict.common.reminders}
+                </DropdownMenuLabel>
+                {overdueRisksCount > 0 && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/risk-register" className="gap-2 text-sm">
+                      <AlertTriangle className="text-danger h-4 w-4 shrink-0" />
+                      {dict.common.overdueRisksReminder.replace(
+                        "{count}",
+                        String(overdueRisksCount),
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {overdueActionsCount > 0 && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/risk-register" className="gap-2 text-sm">
+                      <AlertTriangle className="text-danger h-4 w-4 shrink-0" />
+                      {dict.common.overdueActionsReminder.replace(
+                        "{count}",
+                        String(overdueActionsCount),
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                {reviewsDueCount > 0 && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/risk-register" className="gap-2 text-sm">
+                      <CalendarClock className="text-warning h-4 w-4 shrink-0" />
+                      {dict.common.reviewsDueReminder.replace(
+                        "{count}",
+                        String(reviewsDueCount),
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-primary justify-center text-sm font-medium">
-              {dict.common.viewAll}
+            <DropdownMenuItem
+              className="text-primary justify-center text-sm font-medium"
+              disabled={unreadCount === 0}
+              onSelect={(e) => {
+                e.preventDefault();
+                markAllNotificationsRead();
+              }}
+            >
+              {dict.common.markAllRead}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

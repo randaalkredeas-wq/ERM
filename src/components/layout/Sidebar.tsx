@@ -30,7 +30,7 @@ export function Sidebar() {
       <aside
         style={{ backgroundImage: "var(--sidebar-bg)" }}
         className={cn(
-          "border-sidebar-border text-sidebar-foreground fixed inset-y-0 start-0 z-40 flex flex-col border-e transition-all duration-300 ease-in-out lg:translate-x-0",
+          "border-sidebar-border text-sidebar-foreground fixed inset-y-0 start-0 z-40 flex flex-col border-e transition-all duration-300 ease-in-out lg:translate-x-0 print:hidden",
           collapsed ? "w-20" : "w-72",
           mobileOpen
             ? "translate-x-0"

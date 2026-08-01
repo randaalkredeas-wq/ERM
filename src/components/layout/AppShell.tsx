@@ -20,13 +20,13 @@ function AppShellInner({ children }: { children: ReactNode }) {
       <Sidebar />
       <div
         className={cn(
-          "flex min-h-screen flex-col transition-[padding] duration-300 ease-in-out",
+          "flex min-h-screen flex-col transition-[padding] duration-300 ease-in-out print:ps-0",
           collapsed ? "lg:ps-20" : "lg:ps-72",
         )}
       >
         <Topbar />
         <Breadcrumbs />
-        <main className="flex-1 scrollbar-thin p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 scrollbar-thin p-4 sm:p-6 lg:p-8 print:p-0">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>

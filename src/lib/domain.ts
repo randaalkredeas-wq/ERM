@@ -1,12 +1,17 @@
 import type { BadgeTone } from "@/components/ui/Badge";
 import type {
   ApprovalStatus,
+  ControlEffectiveness,
   IncidentStatus,
   KriStatus,
-  RiskApprovalStepStatus,
+  RiskAppetiteStatus,
   RiskItem,
   RiskStatus,
+  RiskTreatmentStrategy,
+  RiskWorkflowStatus,
   Severity,
+  TreatmentAction,
+  TreatmentActionStatus,
   UserStatus,
 } from "@/types";
 
@@ -18,6 +23,18 @@ export const CURRENT_USER = {
 
 export function riskScore(risk: Pick<RiskItem, "likelihood" | "impact">) {
   return risk.likelihood * risk.impact;
+}
+
+export function inherentScore(
+  risk: Pick<RiskItem, "inherentLikelihood" | "inherentImpact">,
+) {
+  return risk.inherentLikelihood * risk.inherentImpact;
+}
+
+export function targetScore(
+  risk: Pick<RiskItem, "targetLikelihood" | "targetImpact">,
+) {
+  return risk.targetLikelihood * risk.targetImpact;
 }
 
 export function severityFromScore(score: number): Severity {
@@ -34,12 +51,75 @@ export const severityTone: Record<Severity, BadgeTone> = {
   critical: "danger",
 };
 
+export const severityColor: Record<Severity, string> = {
+  low: "var(--success)",
+  medium: "var(--warning)",
+  high: "#f97316",
+  critical: "var(--danger)",
+};
+
 export const riskStatusTone: Record<RiskStatus, BadgeTone> = {
   open: "warning",
   mitigating: "info",
   closed: "success",
-  "pending-approval": "primary",
 };
+
+export const workflowStatusTone: Record<RiskWorkflowStatus, BadgeTone> = {
+  draft: "neutral",
+  "under-review": "warning",
+  approved: "success",
+  rejected: "danger",
+  closed: "info",
+};
+
+export function riskAppetiteStatusOf(
+  risk: Pick<RiskItem, "likelihood" | "impact">,
+): RiskAppetiteStatus {
+  const severity = severityFromScore(riskScore(risk));
+  if (severity === "critical") return "exceeds-appetite";
+  if (severity === "high") return "near-limit";
+  return "within-appetite";
+}
+
+export const riskAppetiteTone: Record<RiskAppetiteStatus, BadgeTone> = {
+  "within-appetite": "success",
+  "near-limit": "warning",
+  "exceeds-appetite": "danger",
+};
+
+export const controlEffectivenessTone: Record<ControlEffectiveness, BadgeTone> = {
+  ineffective: "danger",
+  "partially-effective": "warning",
+  effective: "info",
+  "highly-effective": "success",
+};
+
+export const riskTreatmentTone: Record<RiskTreatmentStrategy, BadgeTone> = {
+  accept: "neutral",
+  mitigate: "info",
+  transfer: "warning",
+  avoid: "danger",
+};
+
+export const treatmentActionStatusTone: Record<
+  TreatmentActionStatus,
+  BadgeTone
+> = {
+  "not-started": "neutral",
+  "in-progress": "info",
+  completed: "success",
+};
+
+export function isTreatmentActionOverdue(action: TreatmentAction) {
+  if (action.status === "completed") return false;
+  return new Date(action.dueDate).getTime() < Date.now();
+}
+
+export function isReviewDue(risk: Pick<RiskItem, "nextReviewDate">, withinDays = 14) {
+  const due = new Date(risk.nextReviewDate).getTime();
+  const now = Date.now();
+  return due - now <= withinDays * 24 * 60 * 60 * 1000;
+}
 
 export const incidentStatusTone: Record<IncidentStatus, BadgeTone> = {
   open: "danger",
@@ -64,11 +144,3 @@ export const userStatusTone: Record<UserStatus, BadgeTone> = {
   inactive: "neutral",
   invited: "info",
 };
-
-export const approvalStepStatusTone: Record<RiskApprovalStepStatus, BadgeTone> =
-  {
-    waiting: "neutral",
-    pending: "warning",
-    approved: "success",
-    rejected: "danger",
-  };

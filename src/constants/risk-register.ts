@@ -92,3 +92,63 @@ export const DEPARTMENT_HEADS: Record<string, string> = {
   "Human Resources": "Fatima Zahra",
   Legal: "Ahmed Nasser",
 };
+
+export const RISK_SOURCES = [
+  "Risk Assessment Workshop",
+  "Internal Audit Finding",
+  "External Audit Finding",
+  "Incident-Derived",
+  "Regulatory Change",
+  "Management Self-Identification",
+  "External Consultant Review",
+  "Customer Complaint",
+] as const;
+
+export const RISK_TYPES = [
+  "Strategic",
+  "Operational",
+  "Financial",
+  "Compliance",
+  "Reputational",
+  "Technology",
+  "Hazard",
+] as const;
+
+export const STRATEGIC_OBJECTIVES = [
+  "Expand into new markets",
+  "Achieve operational excellence",
+  "Protect brand reputation",
+  "Ensure regulatory compliance",
+  "Drive digital transformation",
+  "Strengthen financial resilience",
+  "Build a resilient supply chain",
+] as const;
+
+export const CONTROL_EFFECTIVENESS_OPTIONS = [
+  "ineffective",
+  "partially-effective",
+  "effective",
+  "highly-effective",
+] as const;
+
+export const RISK_TREATMENT_OPTIONS = [
+  "accept",
+  "mitigate",
+  "transfer",
+  "avoid",
+] as const;
+
+export const REVIEW_FREQUENCY_OPTIONS = [
+  "monthly",
+  "quarterly",
+  "semi-annual",
+  "annual",
+] as const;
+
+export const WORKFLOW_STATUSES = [
+  "draft",
+  "under-review",
+  "approved",
+  "rejected",
+  "closed",
+] as const;

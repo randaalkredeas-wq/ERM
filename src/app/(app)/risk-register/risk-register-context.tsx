@@ -2,17 +2,17 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-import {
-  CHIEF_RISK_OFFICER,
-  DEPARTMENT_HEADS,
-} from "@/constants/risk-register";
-import { CURRENT_USER } from "@/lib/domain";
+import { addAuditEntry } from "@/lib/audit-log-store";
+import { CURRENT_USER, severityFromScore } from "@/lib/domain";
 import { risks as seedRisks } from "@/lib/mock-data/risks";
+import { addNotification } from "@/lib/notifications-store";
 import type {
-  RiskApprovalStep,
   RiskAttachment,
   RiskFormInput,
   RiskItem,
+  RiskWorkflowStatus,
+  TreatmentAction,
+  WorkflowTransition,
 } from "@/types";
 
 /**
@@ -60,20 +60,51 @@ function now() {
   return `${d.toISOString().slice(0, 10)} ${d.toTimeString().slice(0, 5)}`;
 }
 
-function buildRisk(
-  id: string,
-  input: RiskFormInput,
-  summary: string,
-): RiskItem {
+function logGlobal(riskId: string, action: string, details: string) {
+  addAuditEntry({
+    timestamp: now(),
+    user: CURRENT_USER.name,
+    action,
+    module: "Risk Register",
+    details: details ? `${riskId} — ${details}` : riskId,
+  });
+}
+
+function snapshotOf(id: string, risk: RiskItem, input: RiskFormInput) {
+  return {
+    title: input.title,
+    status: input.status,
+    workflowStatus: risk.workflowStatus,
+    likelihood: input.likelihood,
+    impact: input.impact,
+    inherentRisk: severityFromScore(
+      input.inherentLikelihood * input.inherentImpact,
+    ),
+    targetRisk: severityFromScore(input.targetLikelihood * input.targetImpact),
+  };
+}
+
+function buildRisk(id: string, input: RiskFormInput, summary: string): RiskItem {
+  const inherentRisk = severityFromScore(
+    input.inherentLikelihood * input.inherentImpact,
+  );
+  const targetRisk = severityFromScore(
+    input.targetLikelihood * input.targetImpact,
+  );
   return {
     id,
     ...input,
+    inherentRisk,
+    targetRisk,
+    workflowStatus: "draft",
+    workflowHistory: [],
+    isArchived: false,
     createdBy: CURRENT_USER.name,
     createdAt: today(),
     updatedAt: today(),
     attachments: [],
     comments: [],
-    approvals: [],
+    treatmentPlans: [],
     auditTrail: [
       {
         id: `AUD-${id}-1`,
@@ -93,9 +124,11 @@ function buildRisk(
         snapshot: {
           title: input.title,
           status: input.status,
+          workflowStatus: "draft",
           likelihood: input.likelihood,
           impact: input.impact,
-          inherentRisk: input.inherentRisk,
+          inherentRisk,
+          targetRisk,
         },
       },
     ],
@@ -106,6 +139,7 @@ function createRisk(input: RiskFormInput): RiskItem {
   const id = nextId(risks);
   const created = buildRisk(id, input, "Created risk");
   mutate((prev) => [created, ...prev]);
+  logGlobal(id, "Created risk", input.title);
   return created;
 }
 
@@ -114,9 +148,17 @@ function updateRisk(id: string, input: RiskFormInput) {
     prev.map((risk) => {
       if (risk.id !== id) return risk;
       const nextVersion = (risk.versions[0]?.version ?? 0) + 1;
+      const inherentRisk = severityFromScore(
+        input.inherentLikelihood * input.inherentImpact,
+      );
+      const targetRisk = severityFromScore(
+        input.targetLikelihood * input.targetImpact,
+      );
       return {
         ...risk,
         ...input,
+        inherentRisk,
+        targetRisk,
         updatedAt: today(),
         auditTrail: [
           {
@@ -135,23 +177,97 @@ function updateRisk(id: string, input: RiskFormInput) {
             editedBy: CURRENT_USER.name,
             editedAt: today(),
             summary: "Risk details updated",
-            snapshot: {
-              title: input.title,
-              status: input.status,
-              likelihood: input.likelihood,
-              impact: input.impact,
-              inherentRisk: input.inherentRisk,
-            },
+            snapshot: snapshotOf(id, risk, input),
           },
           ...risk.versions,
         ],
       };
     }),
   );
+  logGlobal(id, "Updated risk details", input.title);
 }
 
 function deleteRisk(id: string) {
+  const target = risks.find((r) => r.id === id);
   mutate((prev) => prev.filter((r) => r.id !== id));
+  if (target) logGlobal(id, "Deleted risk", target.title);
+}
+
+function duplicateRisk(id: string): RiskItem | undefined {
+  const source = risks.find((r) => r.id === id);
+  if (!source) return undefined;
+  const newId = nextId(risks);
+  const duplicated: RiskItem = {
+    ...source,
+    id: newId,
+    title: `${source.title} (Copy)`,
+    workflowStatus: "draft",
+    workflowHistory: [],
+    status: "open",
+    isArchived: false,
+    createdBy: CURRENT_USER.name,
+    createdAt: today(),
+    updatedAt: today(),
+    attachments: [],
+    comments: [],
+    treatmentPlans: [],
+    auditTrail: [
+      {
+        id: `AUD-${newId}-1`,
+        timestamp: now(),
+        user: CURRENT_USER.name,
+        action: "Duplicated risk",
+        details: `Duplicated from ${source.id}`,
+      },
+    ],
+    versions: [
+      {
+        id: `VER-${newId}-1`,
+        version: 1,
+        editedBy: CURRENT_USER.name,
+        editedAt: today(),
+        summary: `Duplicated from ${source.id}`,
+        snapshot: {
+          title: `${source.title} (Copy)`,
+          status: "open",
+          workflowStatus: "draft",
+          likelihood: source.likelihood,
+          impact: source.impact,
+          inherentRisk: source.inherentRisk,
+          targetRisk: source.targetRisk,
+        },
+      },
+    ],
+  };
+  mutate((prev) => [duplicated, ...prev]);
+  logGlobal(newId, "Duplicated risk", `Duplicated from ${source.id}`);
+  return duplicated;
+}
+
+function setArchived(id: string, archived: boolean) {
+  mutate((prev) =>
+    prev.map((risk) => {
+      if (risk.id !== id) return risk;
+      return {
+        ...risk,
+        isArchived: archived,
+        updatedAt: today(),
+        auditTrail: [
+          {
+            id: `AUD-${id}-${risk.auditTrail.length + 1}`,
+            timestamp: now(),
+            user: CURRENT_USER.name,
+            action: archived ? "Archived risk" : "Restored risk",
+            details: archived
+              ? "Risk moved to the archive"
+              : "Risk restored from the archive",
+          },
+          ...risk.auditTrail,
+        ],
+      };
+    }),
+  );
+  logGlobal(id, archived ? "Archived risk" : "Restored risk", "");
 }
 
 function addComment(id: string, message: string) {
@@ -185,6 +301,7 @@ function addComment(id: string, message: string) {
       };
     }),
   );
+  logGlobal(id, "Added comment", message.trim().slice(0, 80));
 }
 
 function addAttachment(
@@ -219,6 +336,7 @@ function addAttachment(
       };
     }),
   );
+  logGlobal(id, "Uploaded attachment", attachment.name);
 }
 
 function removeAttachment(id: string, attachmentId: string) {
@@ -247,37 +365,156 @@ function removeAttachment(id: string, attachmentId: string) {
   );
 }
 
-function submitForApproval(id: string) {
+const ALLOWED_TRANSITIONS: Record<RiskWorkflowStatus, RiskWorkflowStatus[]> = {
+  draft: ["under-review"],
+  "under-review": ["approved", "rejected"],
+  approved: ["closed", "draft"],
+  rejected: ["under-review", "draft"],
+  closed: ["draft"],
+};
+
+function transitionWorkflow(
+  id: string,
+  toStatus: RiskWorkflowStatus,
+  comment: string | undefined,
+  notify: (risk: RiskItem) => { title: string; description: string; tone: "primary" | "success" | "warning" | "danger" | "info" },
+) {
+  let updatedRisk: RiskItem | undefined;
   mutate((prev) =>
     prev.map((risk) => {
-      if (risk.id !== id || risk.approvals.length > 0) return risk;
-      const deptHead = DEPARTMENT_HEADS[risk.department] ?? CHIEF_RISK_OFFICER;
-      const steps: RiskApprovalStep[] = [
-        {
-          id: `APR-${id}-1`,
-          role: "Department Head Approval",
-          approver: deptHead,
-          status: "pending",
-        },
-        {
-          id: `APR-${id}-2`,
-          role: "Chief Risk Officer Sign-off",
-          approver: CHIEF_RISK_OFFICER,
-          status: "waiting",
-        },
-      ];
-      return {
+      if (risk.id !== id) return risk;
+      if (!ALLOWED_TRANSITIONS[risk.workflowStatus].includes(toStatus)) {
+        return risk;
+      }
+      const transition: WorkflowTransition = {
+        id: `WFT-${id}-${risk.workflowHistory.length + 1}`,
+        fromStatus: risk.workflowStatus,
+        toStatus,
+        actor: CURRENT_USER.name,
+        comment: comment?.trim() || undefined,
+        timestamp: now(),
+      };
+      updatedRisk = {
         ...risk,
-        status: "pending-approval",
+        workflowStatus: toStatus,
+        status: toStatus === "closed" ? "closed" : risk.status,
         updatedAt: today(),
-        approvals: steps,
+        workflowHistory: [transition, ...risk.workflowHistory],
         auditTrail: [
           {
             id: `AUD-${id}-${risk.auditTrail.length + 1}`,
             timestamp: now(),
             user: CURRENT_USER.name,
-            action: "Submitted for approval",
-            details: "Approval workflow started",
+            action: "Workflow status changed",
+            details: `${risk.workflowStatus} → ${toStatus}`,
+          },
+          ...risk.auditTrail,
+        ],
+      };
+      return updatedRisk;
+    }),
+  );
+  if (updatedRisk) {
+    logGlobal(
+      id,
+      "Workflow status changed",
+      `Moved to ${toStatus.replace("-", " ")}`,
+    );
+    const { title, description, tone } = notify(updatedRisk);
+    addNotification({ title, description, tone });
+  }
+}
+
+function submitForReview(id: string, comment?: string) {
+  transitionWorkflow(id, "under-review", comment, (risk) => ({
+    title: "Approval requested",
+    description: `${risk.id} — ${risk.title} was submitted for review.`,
+    tone: "warning",
+  }));
+}
+
+function approveRisk(id: string, comment?: string) {
+  transitionWorkflow(id, "approved", comment, (risk) => ({
+    title: "Risk approved",
+    description: `${risk.id} — ${risk.title} was approved.`,
+    tone: "success",
+  }));
+}
+
+function rejectRisk(id: string, comment?: string) {
+  transitionWorkflow(id, "rejected", comment, (risk) => ({
+    title: "Risk rejected",
+    description: `${risk.id} — ${risk.title} was rejected and returned for rework.`,
+    tone: "danger",
+  }));
+}
+
+function closeRisk(id: string, comment?: string) {
+  transitionWorkflow(id, "closed", comment, (risk) => ({
+    title: "Risk closed",
+    description: `${risk.id} — ${risk.title} was closed.`,
+    tone: "info",
+  }));
+}
+
+function reopenRisk(id: string, comment?: string) {
+  transitionWorkflow(id, "draft", comment, (risk) => ({
+    title: "Risk reopened",
+    description: `${risk.id} — ${risk.title} was reopened for rework.`,
+    tone: "info",
+  }));
+}
+
+function addTreatmentAction(id: string, input: Omit<TreatmentAction, "id">) {
+  mutate((prev) =>
+    prev.map((risk) => {
+      if (risk.id !== id) return risk;
+      const action: TreatmentAction = {
+        ...input,
+        id: `ACT-${id}-${risk.treatmentPlans.length + 1}`,
+      };
+      return {
+        ...risk,
+        updatedAt: today(),
+        treatmentPlans: [...risk.treatmentPlans, action],
+        auditTrail: [
+          {
+            id: `AUD-${id}-${risk.auditTrail.length + 1}`,
+            timestamp: now(),
+            user: CURRENT_USER.name,
+            action: "Added treatment action",
+            details: input.title,
+          },
+          ...risk.auditTrail,
+        ],
+      };
+    }),
+  );
+  logGlobal(id, "Added treatment action", input.title);
+}
+
+function updateTreatmentAction(
+  id: string,
+  actionId: string,
+  patch: Partial<Omit<TreatmentAction, "id">>,
+) {
+  mutate((prev) =>
+    prev.map((risk) => {
+      if (risk.id !== id) return risk;
+      return {
+        ...risk,
+        updatedAt: today(),
+        treatmentPlans: risk.treatmentPlans.map((action) =>
+          action.id === actionId ? { ...action, ...patch } : action,
+        ),
+        auditTrail: [
+          {
+            id: `AUD-${id}-${risk.auditTrail.length + 1}`,
+            timestamp: now(),
+            user: CURRENT_USER.name,
+            action: "Updated treatment action",
+            details:
+              risk.treatmentPlans.find((a) => a.id === actionId)?.title ?? "",
           },
           ...risk.auditTrail,
         ],
@@ -286,59 +523,27 @@ function submitForApproval(id: string) {
   );
 }
 
-function actionApprovalStep(
-  id: string,
-  stepId: string,
-  decision: "approved" | "rejected",
-  comment?: string,
-) {
+function deleteTreatmentAction(id: string, actionId: string) {
   mutate((prev) =>
     prev.map((risk) => {
       if (risk.id !== id) return risk;
-      const stepIndex = risk.approvals.findIndex((s) => s.id === stepId);
-      if (stepIndex === -1) return risk;
-
-      const approvals = risk.approvals.map((step, index) => {
-        if (index === stepIndex) {
-          return {
-            ...step,
-            status: decision,
-            date: today(),
-            comment: comment?.trim() || step.comment,
-          };
-        }
-        if (
-          decision === "approved" &&
-          index === stepIndex + 1 &&
-          step.status === "waiting"
-        ) {
-          return { ...step, status: "pending" as const };
-        }
-        return step;
-      });
-
-      const isLastStep = stepIndex === approvals.length - 1;
-      const nextStatus =
-        decision === "rejected" ? "open" : isLastStep ? "closed" : risk.status;
-
+      const target = risk.treatmentPlans.find((a) => a.id === actionId);
       return {
         ...risk,
-        status: nextStatus,
         updatedAt: today(),
-        approvals,
-        auditTrail: [
-          {
-            id: `AUD-${id}-${risk.auditTrail.length + 1}`,
-            timestamp: now(),
-            user: CURRENT_USER.name,
-            action:
-              decision === "approved"
-                ? "Approved workflow step"
-                : "Rejected workflow step",
-            details: risk.approvals[stepIndex].role,
-          },
-          ...risk.auditTrail,
-        ],
+        treatmentPlans: risk.treatmentPlans.filter((a) => a.id !== actionId),
+        auditTrail: target
+          ? [
+              {
+                id: `AUD-${id}-${risk.auditTrail.length + 1}`,
+                timestamp: now(),
+                user: CURRENT_USER.name,
+                action: "Removed treatment action",
+                details: target.title,
+              },
+              ...risk.auditTrail,
+            ]
+          : risk.auditTrail,
       };
     }),
   );
@@ -357,6 +562,7 @@ function importRisks(inputs: RiskFormInput[]) {
     }
     return [...created, ...prev];
   });
+  logGlobal("Bulk import", "Imported risks", `${inputs.length} risk(s)`);
   return inputs.length;
 }
 
@@ -374,11 +580,20 @@ export function useRiskRegister() {
     createRisk,
     updateRisk,
     deleteRisk,
+    duplicateRisk,
+    archiveRisk: (id: string) => setArchived(id, true),
+    unarchiveRisk: (id: string) => setArchived(id, false),
     addComment,
     addAttachment,
     removeAttachment,
-    submitForApproval,
-    actionApprovalStep,
+    submitForReview,
+    approveRisk,
+    rejectRisk,
+    closeRisk,
+    reopenRisk,
+    addTreatmentAction,
+    updateTreatmentAction,
+    deleteTreatmentAction,
     importRisks,
   };
 }

@@ -1,26 +1,34 @@
 "use client";
 
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArchiveRestore, Archive, ArrowLeft, Copy, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { notFound, useRouter } from "next/navigation";
 import { use, useState, type ReactNode } from "react";
 
-import { RiskApprovalsTab } from "@/components/risk-register/RiskApprovalsTab";
 import { RiskAttachmentsTab } from "@/components/risk-register/RiskAttachmentsTab";
 import { RiskAuditTrailTab } from "@/components/risk-register/RiskAuditTrailTab";
 import { RiskCommentsTab } from "@/components/risk-register/RiskCommentsTab";
 import { RiskDeleteDialog } from "@/components/risk-register/RiskDeleteDialog";
 import { RiskFormDialog } from "@/components/risk-register/RiskFormDialog";
+import { RiskMatrixWidget } from "@/components/risk-register/RiskMatrixWidget";
+import { RiskTreatmentTab } from "@/components/risk-register/RiskTreatmentTab";
 import { RiskVersionsTab } from "@/components/risk-register/RiskVersionsTab";
+import { RiskWorkflowTab } from "@/components/risk-register/RiskWorkflowTab";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import {
+  controlEffectivenessTone,
+  isReviewDue,
+  riskAppetiteStatusOf,
+  riskAppetiteTone,
   riskScore,
   riskStatusTone,
+  riskTreatmentTone,
   severityFromScore,
   severityTone,
+  workflowStatusTone,
 } from "@/lib/domain";
 import { formatDate } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
@@ -34,7 +42,8 @@ export default function RiskDetailPage({
 }) {
   const { id } = use(params);
   const { dict } = useLocale();
-  const { getRisk, deleteRisk } = useRiskRegister();
+  const { getRisk, deleteRisk, duplicateRisk, archiveRisk, unarchiveRisk } =
+    useRiskRegister();
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [editKey, setEditKey] = useState(0);
@@ -51,12 +60,14 @@ export default function RiskDetailPage({
 
   const score = riskScore(risk);
   const residual = severityFromScore(score);
+  const appetite = riskAppetiteStatusOf(risk);
+  const reviewDue = isReviewDue(risk);
 
   return (
     <div className="space-y-6">
       <Link
         href="/risk-register"
-        className="text-muted hover:text-foreground flex w-fit items-center gap-1.5 text-sm transition-colors"
+        className="text-muted hover:text-foreground print:hidden flex w-fit items-center gap-1.5 text-sm transition-colors"
       >
         <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
         {dict.riskDetail.backToRegister}
@@ -67,16 +78,14 @@ export default function RiskDetailPage({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-muted font-mono text-xs">{risk.id}</span>
             <Badge tone={riskStatusTone[risk.status]} dot>
-              {
-                dict.common[
-                  risk.status === "mitigating"
-                    ? "inProgress"
-                    : risk.status === "pending-approval"
-                      ? "pending"
-                      : risk.status
-                ]
-              }
+              {dict.common[risk.status === "mitigating" ? "inProgress" : risk.status]}
             </Badge>
+            <Badge tone={workflowStatusTone[risk.workflowStatus]}>
+              {dict.riskRegister.enums.workflowStatus[risk.workflowStatus]}
+            </Badge>
+            {risk.isArchived && (
+              <Badge tone="neutral">{dict.common.archived}</Badge>
+            )}
           </div>
           <h1 className="text-foreground mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
             {risk.title}
@@ -85,7 +94,32 @@ export default function RiskDetailPage({
             {risk.department} · {risk.category} › {risk.subcategory}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="print:hidden flex shrink-0 flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const duplicated = duplicateRisk(risk.id);
+              if (duplicated) router.push(`/risk-register/${duplicated.id}`);
+            }}
+          >
+            <Copy className="h-4 w-4" />
+            {dict.common.duplicate}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              risk.isArchived ? unarchiveRisk(risk.id) : archiveRisk(risk.id)
+            }
+          >
+            {risk.isArchived ? (
+              <ArchiveRestore className="h-4 w-4" />
+            ) : (
+              <Archive className="h-4 w-4" />
+            )}
+            {risk.isArchived ? dict.common.unarchive : dict.common.archive}
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -109,9 +143,15 @@ export default function RiskDetailPage({
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="overview">
             {dict.riskDetail.tabs.overview}
+          </TabsTrigger>
+          <TabsTrigger value="workflow">
+            {dict.riskDetail.tabs.workflow}
+          </TabsTrigger>
+          <TabsTrigger value="treatment">
+            {dict.riskDetail.tabs.treatment} ({risk.treatmentPlans.length})
           </TabsTrigger>
           <TabsTrigger value="attachments">
             {dict.riskDetail.tabs.attachments} ({risk.attachments.length})
@@ -119,10 +159,9 @@ export default function RiskDetailPage({
           <TabsTrigger value="comments">
             {dict.riskDetail.tabs.comments} ({risk.comments.length})
           </TabsTrigger>
-          <TabsTrigger value="approvals">
-            {dict.riskDetail.tabs.approvals}
+          <TabsTrigger value="timeline">
+            {dict.riskDetail.tabs.timeline}
           </TabsTrigger>
-          <TabsTrigger value="audit">{dict.riskDetail.tabs.audit}</TabsTrigger>
           <TabsTrigger value="versions">
             {dict.riskDetail.tabs.versions}
           </TabsTrigger>
@@ -148,12 +187,40 @@ export default function RiskDetailPage({
                   value={risk.subcategory}
                 />
                 <Row
+                  label={dict.riskRegister.form.riskSource}
+                  value={risk.riskSource}
+                />
+                <Row
+                  label={dict.riskRegister.form.riskType}
+                  value={risk.riskType}
+                />
+                <Row
+                  label={dict.riskRegister.form.strategicObjective}
+                  value={risk.strategicObjective}
+                />
+                <Row
                   label={dict.riskRegister.form.rootCause}
                   value={risk.rootCause}
                 />
                 <Row
+                  label={dict.riskRegister.form.consequences}
+                  value={risk.consequences}
+                />
+                <Row
                   label={dict.riskRegister.form.existingControls}
                   value={risk.existingControls}
+                />
+                <Row
+                  label={dict.riskRegister.form.controlEffectiveness}
+                  value={
+                    <Badge tone={controlEffectivenessTone[risk.controlEffectiveness]}>
+                      {
+                        dict.riskRegister.enums.controlEffectiveness[
+                          risk.controlEffectiveness
+                        ]
+                      }
+                    </Badge>
+                  }
                 />
               </dl>
             </Card>
@@ -162,22 +229,14 @@ export default function RiskDetailPage({
               <CardTitle className="mb-4">
                 {dict.riskDetail.overview.assessment}
               </CardTitle>
-              <dl className="space-y-3 text-sm">
+              <dl className="mb-4 space-y-3 text-sm">
                 <Row
-                  label={dict.riskRegister.form.inherentRisk}
+                  label={dict.riskRegister.columns.inherentRisk}
                   value={
                     <Badge tone={severityTone[risk.inherentRisk]}>
                       {dict.common[risk.inherentRisk]}
                     </Badge>
                   }
-                />
-                <Row
-                  label={dict.riskRegister.form.likelihood}
-                  value={String(risk.likelihood)}
-                />
-                <Row
-                  label={dict.riskRegister.form.impact}
-                  value={String(risk.impact)}
                 />
                 <Row
                   label={dict.riskRegister.columns.residualRisk}
@@ -187,14 +246,49 @@ export default function RiskDetailPage({
                     </Badge>
                   }
                 />
+                <Row
+                  label={dict.riskRegister.columns.targetRisk}
+                  value={
+                    <Badge tone={severityTone[risk.targetRisk]}>
+                      {dict.common[risk.targetRisk]}
+                    </Badge>
+                  }
+                />
+                <Row
+                  label={dict.riskDetail.overview.riskAppetite}
+                  value={
+                    <Badge tone={riskAppetiteTone[appetite]}>
+                      {dict.riskRegister.enums.riskAppetite[appetite]}
+                    </Badge>
+                  }
+                />
               </dl>
+              <p className="text-muted mb-2 text-xs font-semibold tracking-wide">
+                {dict.riskDetail.overview.matrix}
+              </p>
+              <RiskMatrixWidget
+                current={{ likelihood: risk.likelihood, impact: risk.impact }}
+                inherent={{
+                  likelihood: risk.inherentLikelihood,
+                  impact: risk.inherentImpact,
+                }}
+                target={{
+                  likelihood: risk.targetLikelihood,
+                  impact: risk.targetImpact,
+                }}
+                likelihoodLabel={dict.heatMap.likelihood}
+                impactLabel={dict.heatMap.impact}
+                currentLabel={dict.riskRegister.form.matrixCurrent}
+                inherentLabel={dict.riskRegister.form.matrixInherent}
+                targetLabel={dict.riskRegister.form.matrixTarget}
+              />
             </Card>
 
-            <Card className="lg:col-span-2">
+            <Card>
               <CardTitle className="mb-4">
                 {dict.riskDetail.overview.ownership}
               </CardTitle>
-              <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+              <dl className="space-y-3 text-sm">
                 <Row label={dict.riskRegister.form.owner} value={risk.owner} />
                 <Row
                   label={dict.riskRegister.form.dueDate}
@@ -205,21 +299,55 @@ export default function RiskDetailPage({
                   label={dict.riskDetail.createdOn}
                   value={formatDate(risk.createdAt, dict.meta.locale)}
                 />
-              </div>
+              </dl>
+            </Card>
+
+            <Card>
+              <CardTitle className="mb-4">
+                {dict.riskDetail.overview.governance}
+              </CardTitle>
+              <dl className="space-y-3 text-sm">
+                <Row
+                  label={dict.riskRegister.form.riskTreatment}
+                  value={
+                    <Badge tone={riskTreatmentTone[risk.riskTreatment]}>
+                      {dict.riskRegister.enums.riskTreatment[risk.riskTreatment]}
+                    </Badge>
+                  }
+                />
+                <Row
+                  label={dict.riskRegister.form.reviewFrequency}
+                  value={
+                    dict.riskRegister.enums.reviewFrequency[risk.reviewFrequency]
+                  }
+                />
+                <Row
+                  label={dict.riskDetail.overview.nextReview}
+                  value={
+                    <span className={reviewDue ? "text-warning font-medium" : undefined}>
+                      {formatDate(risk.nextReviewDate, dict.meta.locale)}
+                      {reviewDue && ` · ${dict.riskDetail.overview.reviewDue}`}
+                    </span>
+                  }
+                />
+              </dl>
             </Card>
           </div>
         </TabsContent>
 
+        <TabsContent value="workflow">
+          <RiskWorkflowTab risk={risk} />
+        </TabsContent>
+        <TabsContent value="treatment">
+          <RiskTreatmentTab risk={risk} />
+        </TabsContent>
         <TabsContent value="attachments">
           <RiskAttachmentsTab risk={risk} />
         </TabsContent>
         <TabsContent value="comments">
           <RiskCommentsTab risk={risk} />
         </TabsContent>
-        <TabsContent value="approvals">
-          <RiskApprovalsTab risk={risk} />
-        </TabsContent>
-        <TabsContent value="audit">
+        <TabsContent value="timeline">
           <RiskAuditTrailTab risk={risk} />
         </TabsContent>
         <TabsContent value="versions">
