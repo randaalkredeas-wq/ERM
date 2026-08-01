@@ -191,6 +191,8 @@ model Risk {
   @@index([category])
   @@index([ownerId])
   @@index([isArchived])
+  @@index([createdAt])
+  @@index([nextReviewDate])
 }
 
 model RiskAttachment {
@@ -346,6 +348,7 @@ model Incident {
 
   @@index([status])
   @@index([severity])
+  @@index([createdAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -372,6 +375,7 @@ model KriIndicator {
   updatedAt DateTime  @updatedAt
 
   @@index([status])
+  @@index([createdAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -406,6 +410,7 @@ model Approval {
   decidedBy     User?            @relation("ApprovalDecidedBy", fields: [decidedById], references: [id])
 
   @@index([status])
+  @@index([submittedAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -426,6 +431,7 @@ model Document {
   updatedAt  DateTime       @updatedAt
 
   @@index([category])
+  @@index([updatedAt])
 }
 
 // ---------------------------------------------------------------------------

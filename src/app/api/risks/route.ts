@@ -12,7 +12,9 @@ import { requirePermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
   riskInclude,
+  riskListInclude,
   serializeRisk,
+  serializeRiskListItem,
   toUpperSnake,
 } from "@/lib/serializers/risk";
 import {
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
       prisma.risk.count({ where }),
       prisma.risk.findMany({
         where,
-        include: riskInclude,
+        include: riskListInclude,
         orderBy: { createdAt: "desc" },
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     return NextResponse.json({
-      data: rows.map(serializeRisk),
+      data: rows.map(serializeRiskListItem),
       pagination: {
         page: query.page,
         pageSize: query.pageSize,

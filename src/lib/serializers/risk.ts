@@ -48,7 +48,26 @@ export const riskInclude = {
 
 export type RiskWithRelations = Prisma.RiskGetPayload<{ include: typeof riskInclude }>;
 
-export function serializeRisk(risk: RiskWithRelations): RiskItem {
+/**
+ * Lighter include for list views: skips attachments/comments/audit trail/
+ * versions/workflow history, none of which the list, dashboard, heat map,
+ * or Topbar reminders read - only the risk detail page needs them, and it
+ * always fetches a single risk via riskInclude anyway.
+ */
+export const riskListInclude = {
+  owner: true,
+  createdBy: true,
+  treatmentPlans: { include: { owner: true }, orderBy: { createdAt: "asc" } },
+} satisfies Prisma.RiskInclude;
+
+export type RiskListRow = Prisma.RiskGetPayload<{ include: typeof riskListInclude }>;
+
+function serializeRiskScalars(
+  risk: RiskListRow,
+): Omit<
+  RiskItem,
+  "attachments" | "comments" | "auditTrail" | "versions" | "workflowHistory"
+> {
   return {
     id: risk.code,
     title: risk.title,
@@ -77,15 +96,33 @@ export function serializeRisk(risk: RiskWithRelations): RiskItem {
     owner: risk.owner.name,
     status: toKebab(risk.status),
     workflowStatus: toKebab(risk.workflowStatus),
-    workflowHistory: risk.workflowHistory.map(serializeWorkflowTransition),
     dueDate: dateOnly(risk.dueDate),
     isArchived: risk.isArchived,
     createdBy: risk.createdBy.name,
     createdAt: dateOnly(risk.createdAt),
     updatedAt: dateOnly(risk.updatedAt),
+    treatmentPlans: risk.treatmentPlans.map(serializeTreatmentAction),
+  };
+}
+
+/** For list endpoints - fetch with riskListInclude, not riskInclude. */
+export function serializeRiskListItem(risk: RiskListRow): RiskItem {
+  return {
+    ...serializeRiskScalars(risk),
+    attachments: [],
+    comments: [],
+    auditTrail: [],
+    versions: [],
+    workflowHistory: [],
+  };
+}
+
+export function serializeRisk(risk: RiskWithRelations): RiskItem {
+  return {
+    ...serializeRiskScalars(risk),
+    workflowHistory: risk.workflowHistory.map(serializeWorkflowTransition),
     attachments: risk.attachments.map(serializeAttachment),
     comments: risk.comments.map(serializeComment),
-    treatmentPlans: risk.treatmentPlans.map(serializeTreatmentAction),
     auditTrail: risk.auditTrail.map(serializeAuditEntry),
     versions: risk.versions.map(serializeVersion),
   };
