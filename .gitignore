@@ -45,3 +45,9 @@ next-env.d.ts
 
 # uploaded attachments (local disk storage)
 /uploads
+
+# sandbox-installed agent/skill tooling (not project source)
+/.agents
+/.claude
+/.windsurf
+/skills-lock.json
