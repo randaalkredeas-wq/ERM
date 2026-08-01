@@ -1,34 +1,43 @@
+import { Slot } from "@radix-ui/react-slot";
 import { type ButtonHTMLAttributes, forwardRef } from "react";
 
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "outline";
-type ButtonSize = "sm" | "md" | "lg";
+type ButtonVariant =
+  "primary" | "secondary" | "outline" | "ghost" | "danger" | "success";
+type ButtonSize = "sm" | "md" | "lg" | "icon";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  asChild?: boolean;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-blue-600 text-white hover:bg-blue-700",
-  secondary: "bg-gray-900 text-white hover:bg-gray-800",
-  outline: "border border-gray-300 text-gray-900 hover:bg-gray-50",
+  primary:
+    "bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary-hover",
+  secondary: "bg-surface-2 text-foreground hover:bg-border",
+  outline: "border border-border text-foreground hover:bg-surface-2",
+  ghost: "text-foreground hover:bg-surface-2",
+  danger: "bg-danger text-white hover:opacity-90",
+  success: "bg-success text-white hover:opacity-90",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-12 px-6 text-base",
+  sm: "h-8 px-3 text-sm gap-1.5",
+  md: "h-10 px-4 text-sm gap-2",
+  lg: "h-12 px-6 text-base gap-2",
+  icon: "h-9 w-9 shrink-0",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", ...props }, ref) => {
+  ({ className, variant = "primary", size = "md", asChild, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
     return (
-      <button
+      <Comp
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
+          "focus-visible:ring-ring focus-visible:ring-offset-background inline-flex items-center justify-center rounded-lg font-medium whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50",
           variantClasses[variant],
           sizeClasses[size],
           className,

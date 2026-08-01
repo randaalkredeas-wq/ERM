@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cairo, Inter } from "next/font/google";
+
 import "./globals.css";
 
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
+import { TooltipProvider } from "@/components/ui/Tooltip";
 import { siteConfig } from "@/config/site";
+import { LocaleProvider } from "@/providers/locale-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic", "latin"],
 });
 
 export const metadata: Metadata = {
-  title: siteConfig.name,
+  title: {
+    default: `${siteConfig.name} | ${siteConfig.fullName}`,
+    template: `%s | ${siteConfig.name}`,
+  },
   description: siteConfig.description,
 };
 
@@ -29,12 +34,21 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      dir="ltr"
+      suppressHydrationWarning
+      className={`${inter.variable} ${cairo.variable}`}
     >
-      <body className="flex min-h-full flex-col">
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+      <body className="antialiased">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <LocaleProvider>
+            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          </LocaleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
