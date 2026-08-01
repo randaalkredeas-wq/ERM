@@ -62,7 +62,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { storageKey, size } = await saveUploadedFile(file, existing.code);
+    const { storageKey, size } = await saveUploadedFile(
+      file,
+      `risks/${existing.code}`,
+    );
 
     await prisma.risk.update({
       where: { id: existing.id },

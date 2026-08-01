@@ -61,12 +61,12 @@ export function detectAttachmentType(
 
 export async function saveUploadedFile(
   file: File,
-  riskCode: string,
+  subdir: string,
 ): Promise<{ storageKey: string; size: number }> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const ext = path.extname(file.name).toLowerCase();
   const safeName = `${randomUUID()}${ext}`;
-  const relativeDir = path.join("risks", riskCode);
+  const relativeDir = subdir;
   const dir = path.join(UPLOADS_ROOT, relativeDir);
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, safeName), buffer);

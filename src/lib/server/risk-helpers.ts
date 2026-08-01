@@ -3,6 +3,7 @@ import "server-only";
 import { BadRequestError, NotFoundError } from "@/lib/api-utils";
 import { prisma } from "@/lib/prisma";
 import { riskInclude, type RiskWithRelations } from "@/lib/serializers/risk";
+import { nextCode } from "@/lib/server/codes";
 
 export async function resolveUserIdByName(name: string): Promise<string> {
   const user = await prisma.user.findFirst({ where: { name }, select: { id: true } });
@@ -31,9 +32,5 @@ export async function findRiskWithRelationsByCode(
 /** Generates the next sequential RSK-#### code. */
 export async function generateNextRiskCode(): Promise<string> {
   const rows = await prisma.risk.findMany({ select: { code: true } });
-  const max = rows.reduce((acc, r) => {
-    const num = Number(r.code.replace("RSK-", ""));
-    return Number.isFinite(num) ? Math.max(acc, num) : acc;
-  }, 1000);
-  return `RSK-${max + 1}`;
+  return nextCode(rows.map((r) => r.code), "RSK");
 }
