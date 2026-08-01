@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { logout } from "@/app/login/actions";
 import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
@@ -28,13 +29,14 @@ import {
 import { Input } from "@/components/ui/Input";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import type { CurrentUser } from "@/lib/dal";
 import { isReviewDue, isTreatmentActionOverdue } from "@/lib/domain";
 import {
   markAllNotificationsRead,
   markNotificationRead,
   useNotifications,
 } from "@/lib/notifications-store";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 
 const toneDot: Record<string, string> = {
@@ -45,8 +47,9 @@ const toneDot: Record<string, string> = {
   info: "bg-info",
 };
 
-export function Topbar() {
+export function Topbar({ user }: { user: CurrentUser }) {
   const { setMobileOpen } = useSidebar();
+  const initials = getInitials(user.name);
   const { dict } = useLocale();
   const notifications = useNotifications();
   const { risks } = useRiskRegister();
@@ -210,22 +213,20 @@ export function Topbar() {
               className="hover:bg-surface-2 flex items-center gap-2 rounded-full py-1 ps-1 pe-1 transition-colors"
             >
               <Avatar className="h-8 w-8">
-                <AvatarFallback>LH</AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-64" align="end">
             <div className="flex items-center gap-3 px-2.5 py-2">
               <Avatar className="h-10 w-10">
-                <AvatarFallback>LH</AvatarFallback>
+                <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <p className="text-foreground truncate text-sm font-semibold">
-                  Layla Haddad
+                  {user.name}
                 </p>
-                <p className="text-muted truncate text-xs">
-                  layla.haddad@ermcorp.com
-                </p>
+                <p className="text-muted truncate text-xs">{user.email}</p>
               </div>
             </div>
             <DropdownMenuSeparator />
@@ -246,7 +247,13 @@ export function Topbar() {
               {dict.settings.security.changePassword}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-danger">
+            <DropdownMenuItem
+              className="text-danger"
+              onSelect={(e) => {
+                e.preventDefault();
+                void logout();
+              }}
+            >
               <LogOut className="h-4 w-4" />
               {dict.common.logout}
             </DropdownMenuItem>

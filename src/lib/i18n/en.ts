@@ -635,6 +635,21 @@ const en = {
     errorBody:
       "An unexpected error occurred while rendering this page. Our team has been notified.",
   },
+  auth: {
+    title: "Sign in to ERM",
+    subtitle: "Enterprise Risk Management platform",
+    emailLabel: "Email address",
+    emailPlaceholder: "you@ermcorp.com",
+    passwordLabel: "Password",
+    passwordPlaceholder: "Enter your password",
+    submit: "Sign In",
+    submitting: "Signing in...",
+    errors: {
+      validation_error: "Enter your email and password to continue.",
+      rate_limited: "Too many attempts. Please try again in a few minutes.",
+      invalid_credentials: "Incorrect email or password.",
+    },
+  },
 };
 
 export default en;

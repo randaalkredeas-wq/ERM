@@ -631,6 +631,21 @@ const ar: Dictionary = {
     errorTitle: "حدث خطأ ما",
     errorBody: "حدث خطأ غير متوقع أثناء عرض هذه الصفحة. تم إبلاغ فريقنا.",
   },
+  auth: {
+    title: "تسجيل الدخول إلى ERM",
+    subtitle: "منصة إدارة المخاطر المؤسسية",
+    emailLabel: "البريد الإلكتروني",
+    emailPlaceholder: "you@ermcorp.com",
+    passwordLabel: "كلمة المرور",
+    passwordPlaceholder: "أدخل كلمة المرور",
+    submit: "تسجيل الدخول",
+    submitting: "جارٍ تسجيل الدخول...",
+    errors: {
+      validation_error: "أدخل البريد الإلكتروني وكلمة المرور للمتابعة.",
+      rate_limited: "محاولات كثيرة جداً. الرجاء المحاولة مرة أخرى بعد قليل.",
+      invalid_credentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+    },
+  },
 };
 
 export default ar;

@@ -11,8 +11,15 @@ import {
 } from "@/components/layout/sidebar-context";
 import { Topbar } from "@/components/layout/Topbar";
 import { cn } from "@/lib/utils";
+import type { CurrentUser } from "@/lib/dal";
 
-function AppShellInner({ children }: { children: ReactNode }) {
+function AppShellInner({
+  children,
+  user,
+}: {
+  children: ReactNode;
+  user: CurrentUser;
+}) {
   const { collapsed } = useSidebar();
 
   return (
@@ -24,7 +31,7 @@ function AppShellInner({ children }: { children: ReactNode }) {
           collapsed ? "lg:ps-20" : "lg:ps-72",
         )}
       >
-        <Topbar />
+        <Topbar user={user} />
         <Breadcrumbs />
         <main className="flex-1 scrollbar-thin p-4 sm:p-6 lg:p-8 print:p-0">
           <PageTransition>{children}</PageTransition>
@@ -34,10 +41,16 @@ function AppShellInner({ children }: { children: ReactNode }) {
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  user,
+}: {
+  children: ReactNode;
+  user: CurrentUser;
+}) {
   return (
     <SidebarProvider>
-      <AppShellInner>{children}</AppShellInner>
+      <AppShellInner user={user}>{children}</AppShellInner>
     </SidebarProvider>
   );
 }

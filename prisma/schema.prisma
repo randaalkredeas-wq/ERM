@@ -1,0 +1,516 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Auth / Users
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  SYSTEM_ADMIN
+  CRO
+  DEPARTMENT_MANAGER
+  RISK_OWNER
+  EMPLOYEE
+  AUDITOR
+  READONLY_EXECUTIVE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  INVITED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  role         UserRole
+  department   String?
+  jobTitle     String?
+  phone        String?
+  location     String?
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  sessions              Session[]
+  risksOwned            Risk[]               @relation("RiskOwner")
+  risksCreated          Risk[]               @relation("RiskCreatedBy")
+  riskComments          RiskComment[]
+  riskAttachments       RiskAttachment[]
+  riskAuditEntries      RiskAuditEntry[]
+  riskVersions          RiskVersion[]
+  workflowTransitions   WorkflowTransition[]
+  treatmentActionsOwned TreatmentAction[]    @relation("TreatmentOwner")
+  auditLogEntries       AuditLogEntry[]
+  notifications         Notification[]
+  incidentsReported     Incident[]
+  approvalsRequested    Approval[]           @relation("ApprovalRequestedBy")
+  approvalsDecided      Approval[]           @relation("ApprovalDecidedBy")
+  documentsOwned        Document[]
+  reportsGenerated      GeneratedReport[]
+  creditExposures       CreditExposure[]     @relation("CreditCollector")
+
+  @@index([role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Shared enums
+// ---------------------------------------------------------------------------
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AttachmentType {
+  PDF
+  DOC
+  XLS
+  PPT
+  IMAGE
+  OTHER
+}
+
+// ---------------------------------------------------------------------------
+// Risk Register
+// ---------------------------------------------------------------------------
+
+enum RiskStatus {
+  OPEN
+  MITIGATING
+  CLOSED
+}
+
+enum ControlEffectiveness {
+  INEFFECTIVE
+  PARTIALLY_EFFECTIVE
+  EFFECTIVE
+  HIGHLY_EFFECTIVE
+}
+
+enum RiskTreatmentStrategy {
+  ACCEPT
+  MITIGATE
+  TRANSFER
+  AVOID
+}
+
+enum ReviewFrequency {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum RiskWorkflowStatus {
+  DRAFT
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum TreatmentActionStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Risk {
+  id                   String                @id @default(cuid())
+  code                 String                @unique
+  title                String
+  description          String
+  department           String
+  category             String
+  subcategory          String
+  riskSource           String
+  riskType             String
+  strategicObjective   String
+  rootCause            String
+  consequences         String
+  existingControls     String
+  controlEffectiveness ControlEffectiveness
+  inherentLikelihood   Int
+  inherentImpact       Int
+  inherentRisk         Severity
+  likelihood           Int
+  impact               Int
+  targetLikelihood     Int
+  targetImpact         Int
+  targetRisk           Severity
+  riskTreatment        RiskTreatmentStrategy
+  reviewFrequency      ReviewFrequency
+  nextReviewDate       DateTime
+  ownerId              String
+  owner                User                  @relation("RiskOwner", fields: [ownerId], references: [id])
+  status               RiskStatus
+  workflowStatus       RiskWorkflowStatus    @default(DRAFT)
+  dueDate              DateTime
+  isArchived           Boolean               @default(false)
+  createdById          String
+  createdBy            User                  @relation("RiskCreatedBy", fields: [createdById], references: [id])
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+
+  attachments     RiskAttachment[]
+  comments        RiskComment[]
+  treatmentPlans  TreatmentAction[]
+  auditTrail      RiskAuditEntry[]
+  versions        RiskVersion[]
+  workflowHistory WorkflowTransition[]
+
+  @@index([status])
+  @@index([workflowStatus])
+  @@index([department])
+  @@index([category])
+  @@index([ownerId])
+  @@index([isArchived])
+}
+
+model RiskAttachment {
+  id           String         @id @default(cuid())
+  riskId       String
+  risk         Risk           @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  name         String
+  type         AttachmentType
+  size         Int
+  storageKey   String
+  uploadedById String
+  uploadedBy   User           @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime       @default(now())
+
+  @@index([riskId])
+}
+
+model RiskComment {
+  id        String   @id @default(cuid())
+  riskId    String
+  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([riskId])
+}
+
+model TreatmentAction {
+  id        String                @id @default(cuid())
+  riskId    String
+  risk      Risk                  @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  title     String
+  ownerId   String
+  owner     User                  @relation("TreatmentOwner", fields: [ownerId], references: [id])
+  dueDate   DateTime
+  status    TreatmentActionStatus @default(NOT_STARTED)
+  progress  Int                   @default(0)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@index([riskId])
+  @@index([dueDate])
+}
+
+model WorkflowTransition {
+  id         String             @id @default(cuid())
+  riskId     String
+  risk       Risk               @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  fromStatus RiskWorkflowStatus
+  toStatus   RiskWorkflowStatus
+  actorId    String
+  actor      User               @relation(fields: [actorId], references: [id])
+  comment    String?
+  createdAt  DateTime           @default(now())
+
+  @@index([riskId])
+}
+
+model RiskVersion {
+  id         String   @id @default(cuid())
+  riskId     String
+  risk       Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  version    Int
+  editedById String
+  editedBy   User     @relation(fields: [editedById], references: [id])
+  summary    String
+  snapshot   Json
+  createdAt  DateTime @default(now())
+
+  @@index([riskId])
+}
+
+model RiskAuditEntry {
+  id        String   @id @default(cuid())
+  riskId    String
+  risk      Risk     @relation(fields: [riskId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  details   String
+  createdAt DateTime @default(now())
+
+  @@index([riskId])
+}
+
+// ---------------------------------------------------------------------------
+// Global audit log (platform-wide, immutable)
+// ---------------------------------------------------------------------------
+
+model AuditLogEntry {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  module    String
+  details   String
+  ipAddress String
+  createdAt DateTime @default(now())
+
+  @@index([module])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+enum NotificationTone {
+  PRIMARY
+  SUCCESS
+  WARNING
+  DANGER
+  INFO
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  tone        NotificationTone
+  read        Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  @@index([userId, read])
+}
+
+// ---------------------------------------------------------------------------
+// Incidents
+// ---------------------------------------------------------------------------
+
+enum IncidentStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Incident {
+  id           String         @id @default(cuid())
+  code         String         @unique
+  title        String
+  category     String
+  severity     Severity
+  reportedById String
+  reportedBy   User           @relation(fields: [reportedById], references: [id])
+  status       IncidentStatus @default(OPEN)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([status])
+  @@index([severity])
+}
+
+// ---------------------------------------------------------------------------
+// KRI / KPI
+// ---------------------------------------------------------------------------
+
+enum KriStatus {
+  ON_TRACK
+  AT_RISK
+  BREACHED
+}
+
+model KriIndicator {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  name      String
+  category  String
+  current   Float
+  target    Float
+  unit      String
+  trend     Float[]
+  status    KriStatus
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Approvals
+// ---------------------------------------------------------------------------
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ApprovalPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Approval {
+  id            String           @id @default(cuid())
+  code          String           @unique
+  title         String
+  type          String
+  requestedById String
+  requestedBy   User             @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
+  submittedAt   DateTime         @default(now())
+  dueDate       DateTime
+  priority      ApprovalPriority
+  status        ApprovalStatus   @default(PENDING)
+  decidedAt     DateTime?
+  decidedById   String?
+  decidedBy     User?            @relation("ApprovalDecidedBy", fields: [decidedById], references: [id])
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+model Document {
+  id         String         @id @default(cuid())
+  name       String
+  category   String
+  ownerId    String
+  owner      User           @relation(fields: [ownerId], references: [id])
+  version    String
+  storageKey String
+  size       Int
+  fileType   AttachmentType
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([category])
+}
+
+// ---------------------------------------------------------------------------
+// AI Insights
+// ---------------------------------------------------------------------------
+
+model AiInsight {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  confidence  Int
+  category    String
+  severity    Severity
+  createdAt   DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Reports
+// ---------------------------------------------------------------------------
+
+enum ReportFormat {
+  PDF
+  XLSX
+  PPTX
+}
+
+model ReportTemplate {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  category    String
+}
+
+model GeneratedReport {
+  id            String       @id @default(cuid())
+  name          String
+  type          String
+  generatedById String
+  generatedBy   User         @relation(fields: [generatedById], references: [id])
+  format        ReportFormat
+  storageKey    String?
+  createdAt     DateTime     @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Credit Portfolio & Collections
+// ---------------------------------------------------------------------------
+
+enum EclStage {
+  STAGE_1
+  STAGE_2
+  STAGE_3
+}
+
+enum CollectionStatus {
+  CURRENT
+  IN_COLLECTIONS
+  RESTRUCTURED
+  LEGAL
+  WRITTEN_OFF
+  RECOVERED
+}
+
+model CreditExposure {
+  id                 String           @id @default(cuid())
+  code               String           @unique
+  customerName       String
+  segment            String
+  sector             String
+  product            String
+  exposureAmount     Decimal          @db.Decimal(18, 2)
+  outstandingBalance Decimal          @db.Decimal(18, 2)
+  daysPastDue        Int
+  eclStage           EclStage
+  eclAmount          Decimal          @db.Decimal(18, 2)
+  riskRating         String
+  collectionStatus   CollectionStatus
+  collectorId        String?
+  collector          User?            @relation("CreditCollector", fields: [collectorId], references: [id])
+  lastPaymentDate    DateTime?
+  nextActionDate     DateTime
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([eclStage])
+  @@index([collectionStatus])
+  @@index([segment])
+}
