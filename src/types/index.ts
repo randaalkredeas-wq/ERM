@@ -269,3 +269,43 @@ export interface AiInsightItem {
   severity: Severity;
   generatedAt: string;
 }
+
+export type EclStage = "stage-1" | "stage-2" | "stage-3";
+
+export type CollectionStatus =
+  | "current"
+  | "in-collections"
+  | "restructured"
+  | "legal"
+  | "written-off"
+  | "recovered";
+
+export interface CreditExposure {
+  id: string;
+  customerName: string;
+  segment: string;
+  sector: string;
+  product: string;
+  exposureAmount: number;
+  outstandingBalance: number;
+  daysPastDue: number;
+  eclStage: EclStage;
+  eclAmount: number;
+  riskRating: string;
+  collectionStatus: CollectionStatus;
+  collector: string;
+  lastPaymentDate: string;
+  nextActionDate: string;
+}
+
+export interface AgingBucket {
+  label: string;
+  amount: number;
+  accounts: number;
+}
+
+export interface PortfolioTrendPoint {
+  label: string;
+  nplRatio: number;
+  eclCoverage: number;
+}

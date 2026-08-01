@@ -11,6 +11,7 @@ import {
   Sparkles,
   Thermometer,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,6 +41,7 @@ export const navGroups: NavGroup[] = [
     key: "risk",
     items: [
       { href: "/risk-register", icon: ShieldAlert, labelKey: "riskRegister" },
+      { href: "/portfolio", icon: Wallet, labelKey: "portfolio" },
       { href: "/heat-map", icon: Thermometer, labelKey: "heatMap" },
       { href: "/incidents", icon: AlertTriangle, labelKey: "incidents" },
       { href: "/kri-kpi", icon: Gauge, labelKey: "kriKpi" },

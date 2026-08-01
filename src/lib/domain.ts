@@ -1,7 +1,10 @@
 import type { BadgeTone } from "@/components/ui/Badge";
 import type {
   ApprovalStatus,
+  CollectionStatus,
   ControlEffectiveness,
+  CreditExposure,
+  EclStage,
   IncidentStatus,
   KriStatus,
   RiskAppetiteStatus,
@@ -144,3 +147,22 @@ export const userStatusTone: Record<UserStatus, BadgeTone> = {
   inactive: "neutral",
   invited: "info",
 };
+
+export const eclStageTone: Record<EclStage, BadgeTone> = {
+  "stage-1": "success",
+  "stage-2": "warning",
+  "stage-3": "danger",
+};
+
+export const collectionStatusTone: Record<CollectionStatus, BadgeTone> = {
+  current: "success",
+  "in-collections": "warning",
+  restructured: "info",
+  legal: "danger",
+  "written-off": "neutral",
+  recovered: "primary",
+};
+
+export function isNpl(exposure: Pick<CreditExposure, "eclStage" | "daysPastDue">) {
+  return exposure.eclStage === "stage-3" || exposure.daysPastDue >= 90;
+}
