@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { handleApiError, logAudit, requireApiUser } from "@/lib/api-utils";
 import { severityFromScore } from "@/lib/domain";
+import { riskAssignedEmail } from "@/lib/email-templates";
 import { canActOnRisk, requirePermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { serializeRisk, toUpperSnake } from "@/lib/serializers/risk";
@@ -10,6 +11,7 @@ import {
   findRiskWithRelationsByCode,
   resolveUserIdByName,
 } from "@/lib/server/risk-helpers";
+import { notifyUser } from "@/lib/server/notify";
 import { RiskFormSchema } from "@/lib/validation/risk";
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -120,14 +122,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     if (ownerChanged) {
-      await prisma.notification.create({
-        data: {
-          userId: ownerId,
+      await notifyUser(
+        ownerId,
+        {
           title: "New risk assigned",
           description: `${updated.code} — ${updated.title} was assigned to you.`,
           tone: "PRIMARY",
         },
-      });
+        riskAssignedEmail(updated.code, updated.title),
+      );
     }
 
     const full = await findRiskWithRelationsByCode(updated.code);

@@ -2,6 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { handleApiError, logAudit, requireApiUser } from "@/lib/api-utils";
 import {
+  approvalDecisionEmail,
+  approvalRequestEmail,
+  riskClosedEmail,
+} from "@/lib/email-templates";
+import {
   canActOnRisk,
   canApproveWorkflow,
   ForbiddenError,
@@ -12,6 +17,7 @@ import {
   findRiskRowByCode,
   findRiskWithRelationsByCode,
 } from "@/lib/server/risk-helpers";
+import { notifyUser } from "@/lib/server/notify";
 import { WorkflowTransitionSchema } from "@/lib/validation/risk";
 import type { RiskWorkflowStatus } from "@/types";
 
@@ -115,14 +121,35 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const notification = NOTIFICATIONS[toStatus];
     if (existing.ownerId !== user.id) {
-      await prisma.notification.create({
-        data: {
-          userId: existing.ownerId,
-          title: notification.title,
-          description: notification.describe(existing.code, existing.title),
-          tone: notification.tone as never,
-        },
-      });
+      const email =
+        toStatus === "under-review"
+          ? approvalRequestEmail(existing.code, existing.title)
+          : toStatus === "approved" || toStatus === "rejected"
+            ? approvalDecisionEmail(existing.code, existing.title, toStatus)
+            : toStatus === "closed"
+              ? riskClosedEmail(existing.code, existing.title)
+              : null;
+
+      if (email) {
+        await notifyUser(
+          existing.ownerId,
+          {
+            title: notification.title,
+            description: notification.describe(existing.code, existing.title),
+            tone: notification.tone as never,
+          },
+          email,
+        );
+      } else {
+        await prisma.notification.create({
+          data: {
+            userId: existing.ownerId,
+            title: notification.title,
+            description: notification.describe(existing.code, existing.title),
+            tone: notification.tone as never,
+          },
+        });
+      }
     }
 
     const full = await findRiskWithRelationsByCode(existing.code);

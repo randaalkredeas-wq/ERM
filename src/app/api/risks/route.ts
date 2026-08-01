@@ -7,6 +7,7 @@ import {
   requireApiUser,
 } from "@/lib/api-utils";
 import { severityFromScore } from "@/lib/domain";
+import { riskAssignedEmail } from "@/lib/email-templates";
 import { requirePermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import {
@@ -18,6 +19,7 @@ import {
   generateNextRiskCode,
   resolveUserIdByName,
 } from "@/lib/server/risk-helpers";
+import { notifyUser } from "@/lib/server/notify";
 import { RiskFormSchema, RiskListQuerySchema } from "@/lib/validation/risk";
 
 export async function GET(request: NextRequest) {
@@ -156,14 +158,15 @@ export async function POST(request: NextRequest) {
     });
 
     if (ownerId !== user.id) {
-      await prisma.notification.create({
-        data: {
-          userId: ownerId,
+      await notifyUser(
+        ownerId,
+        {
           title: "New risk assigned",
           description: `${risk.code} — ${risk.title} was assigned to you.`,
           tone: "PRIMARY",
         },
-      });
+        riskAssignedEmail(risk.code, risk.title),
+      );
     }
 
     return NextResponse.json({ data: serializeRisk(risk) }, { status: 201 });
