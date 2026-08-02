@@ -1,18 +1,29 @@
-import { redirect } from "next/navigation";
+"use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+import { AuthPageBackground } from "@/components/auth/AuthPageBackground";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { getCurrentUser } from "@/lib/dal";
+import { useMockAuth } from "@/providers/mock-auth-provider";
 
-export default async function LoginPage() {
-  const user = await getCurrentUser();
-  if (user) redirect("/dashboard");
+export default function LoginPage() {
+  const { status } = useMockAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
+
+  if (status === "authenticated") {
+    return null;
+  }
 
   return (
-    <div
-      className="bg-background flex min-h-screen items-center justify-center p-4"
-      style={{ backgroundImage: "var(--sidebar-bg)" }}
-    >
+    <AuthPageBackground>
       <LoginForm />
-    </div>
+    </AuthPageBackground>
   );
 }

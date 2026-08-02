@@ -2,8 +2,19 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const SESSION_COOKIE = "erm_session";
-const PUBLIC_PATHS = ["/login"];
+const AUTH_ENTRY_PATH = "/login";
+const PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/session-expired",
+  "/access-denied",
+];
 const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+function matchesPath(pathname: string, path: string) {
+  return pathname === path || pathname.startsWith(`${path}/`);
+}
 
 /**
  * Rejects cross-site state-changing API requests. SameSite=Lax cookies
@@ -20,9 +31,12 @@ function isCrossSiteApiRequest(request: NextRequest): boolean {
 }
 
 /**
- * Optimistic auth check only (cookie presence, no DB lookup) - Proxy runs on
- * every request including prefetches, so the authoritative check lives in
- * the Data Access Layer (see src/lib/dal.ts) instead.
+ * Presence-only cookie check for the current mock authentication system
+ * (see src/lib/mock-auth.ts / src/lib/mock-session.ts / src/providers/
+ * mock-auth-provider.tsx). There is no server session store to look up
+ * yet - the client sets/clears this cookie itself alongside its localStorage
+ * session record. Real, server-verified authentication will replace this in
+ * a later phase.
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -35,16 +49,14 @@ export function proxy(request: NextRequest) {
   }
 
   const hasSessionCookie = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
-  const isPublicPath = PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
+  const isPublicPath = PUBLIC_PATHS.some((path) => matchesPath(pathname, path));
 
   if (!isPublicPath && !hasSessionCookie) {
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  if (isPublicPath && hasSessionCookie) {
+  if (matchesPath(pathname, AUTH_ENTRY_PATH) && hasSessionCookie) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

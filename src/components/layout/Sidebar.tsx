@@ -7,12 +7,12 @@ import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { navGroups } from "@/constants/nav";
 import { siteConfig } from "@/config/site";
-import type { CurrentUser } from "@/lib/dal";
+import type { MockUser } from "@/lib/mock-auth";
 import { can } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
 
-export function Sidebar({ user }: { user: CurrentUser }) {
+export function Sidebar({ user }: { user: MockUser }) {
   const { collapsed, toggleCollapsed, mobileOpen, setMobileOpen } =
     useSidebar();
   const pathname = usePathname();

@@ -6,6 +6,7 @@ import "./globals.css";
 import { TooltipProvider } from "@/components/ui/Tooltip";
 import { siteConfig } from "@/config/site";
 import { LocaleProvider } from "@/providers/locale-provider";
+import { MockAuthProvider } from "@/providers/mock-auth-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 
 const inter = Inter({
@@ -46,7 +47,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LocaleProvider>
-            <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+            <MockAuthProvider>
+              <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+            </MockAuthProvider>
           </LocaleProvider>
         </ThemeProvider>
       </body>

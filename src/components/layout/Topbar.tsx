@@ -12,8 +12,8 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-import { logout } from "@/app/login/actions";
 import { useRiskRegister } from "@/app/(app)/risk-register/risk-register-context";
 import { useSidebar } from "@/components/layout/sidebar-context";
 import { Avatar, AvatarFallback } from "@/components/ui/Avatar";
@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import type { CurrentUser } from "@/lib/dal";
+import type { MockUser } from "@/lib/mock-auth";
 import { isReviewDue, isTreatmentActionOverdue } from "@/lib/domain";
 import {
   markAllNotificationsRead,
@@ -38,6 +38,7 @@ import {
 } from "@/lib/notifications-store";
 import { cn, getInitials } from "@/lib/utils";
 import { useLocale } from "@/providers/locale-provider";
+import { useMockAuth } from "@/providers/mock-auth-provider";
 
 const toneDot: Record<string, string> = {
   primary: "bg-primary",
@@ -47,10 +48,12 @@ const toneDot: Record<string, string> = {
   info: "bg-info",
 };
 
-export function Topbar({ user }: { user: CurrentUser }) {
+export function Topbar({ user }: { user: MockUser }) {
   const { setMobileOpen } = useSidebar();
   const initials = getInitials(user.name);
   const { dict } = useLocale();
+  const router = useRouter();
+  const { logout } = useMockAuth();
   const notifications = useNotifications();
   const { risks } = useRiskRegister();
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -251,7 +254,8 @@ export function Topbar({ user }: { user: CurrentUser }) {
               className="text-danger"
               onSelect={(e) => {
                 e.preventDefault();
-                void logout();
+                logout();
+                router.push("/login");
               }}
             >
               <LogOut className="h-4 w-4" />

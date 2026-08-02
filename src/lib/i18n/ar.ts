@@ -1067,16 +1067,68 @@ const ar: Dictionary = {
     title: "تسجيل الدخول إلى ERM",
     subtitle: "منصة إدارة المخاطر المؤسسية",
     emailLabel: "البريد الإلكتروني",
-    emailPlaceholder: "you@ermcorp.com",
+    emailPlaceholder: "you@loqen.com",
     passwordLabel: "كلمة المرور",
     passwordPlaceholder: "أدخل كلمة المرور",
+    rememberMe: "تذكرني",
+    forgotPasswordLink: "نسيت كلمة المرور؟",
     submit: "تسجيل الدخول",
     submitting: "جارٍ تسجيل الدخول...",
+    demoAccountsTitle: "حسابات تجريبية",
+    demoAccountsHint:
+      "هذا عرض توضيحي لمصادقة وهمية. كل حساب أدناه يستخدم كلمة المرور {password}. انقر على حساب لتعبئة نموذج تسجيل الدخول تلقائياً.",
     errors: {
       validation_error: "أدخل البريد الإلكتروني وكلمة المرور للمتابعة.",
       rate_limited: "محاولات كثيرة جداً. الرجاء المحاولة مرة أخرى بعد قليل.",
       invalid_credentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
     },
+    validation: {
+      emailRequired: "أدخل بريدك الإلكتروني.",
+      emailInvalid: "أدخل بريداً إلكترونياً صالحاً.",
+      passwordRequired: "أدخل كلمة المرور.",
+    },
+  },
+  forgotPassword: {
+    title: "نسيت كلمة المرور؟",
+    subtitle: "أدخل بريدك الإلكتروني وسنرسل لك تعليمات إعادة التعيين.",
+    submit: "إرسال رابط إعادة التعيين",
+    submitting: "جارٍ الإرسال...",
+    sentTitle: "تحقق من بريدك الإلكتروني",
+    sentBody:
+      "إذا كان هناك حساب مرتبط بـ {email}، فستصلك تعليمات إعادة تعيين كلمة المرور قريباً.",
+    continueToReset: "المتابعة إلى إعادة تعيين كلمة المرور (تجريبي)",
+    backToLogin: "العودة إلى تسجيل الدخول",
+    validation: {
+      emailInvalid: "أدخل بريداً إلكترونياً صالحاً.",
+    },
+  },
+  resetPassword: {
+    title: "إعادة تعيين كلمة المرور",
+    subtitle: "اختر كلمة مرور جديدة لحسابك.",
+    subtitleWithEmail: "اختر كلمة مرور جديدة لـ {email}.",
+    newPasswordLabel: "كلمة المرور الجديدة",
+    confirmPasswordLabel: "تأكيد كلمة المرور الجديدة",
+    submit: "إعادة تعيين كلمة المرور",
+    submitting: "جارٍ إعادة التعيين...",
+    successTitle: "تم إعادة تعيين كلمة المرور",
+    successBody:
+      "تم إعادة تعيين كلمة المرور. هذه بيئة تجريبية، لذا يُرجى متابعة تسجيل الدخول باستخدام كلمة المرور التجريبية 123456.",
+    backToLogin: "المتابعة إلى تسجيل الدخول",
+    validation: {
+      tooShort: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.",
+      mismatch: "كلمتا المرور غير متطابقتين.",
+    },
+  },
+  sessionExpired: {
+    title: "انتهت الجلسة",
+    body: "انتهت جلستك لأسباب أمنية. الرجاء تسجيل الدخول مرة أخرى للمتابعة.",
+    cta: "تسجيل الدخول مرة أخرى",
+  },
+  accessDenied: {
+    title: "الوصول مرفوض",
+    body: "ليس لديك صلاحية لعرض هذه الصفحة. إذا كنت تعتقد أن هذا خطأ، تواصل مع مسؤول النظام.",
+    backToDashboard: "العودة إلى لوحة التحكم",
+    signInDifferent: "تسجيل الدخول بمستخدم آخر",
   },
 };
 

@@ -1073,16 +1073,68 @@ const en = {
     title: "Sign in to ERM",
     subtitle: "Enterprise Risk Management platform",
     emailLabel: "Email address",
-    emailPlaceholder: "you@ermcorp.com",
+    emailPlaceholder: "you@loqen.com",
     passwordLabel: "Password",
     passwordPlaceholder: "Enter your password",
+    rememberMe: "Remember me",
+    forgotPasswordLink: "Forgot password?",
     submit: "Sign In",
     submitting: "Signing in...",
+    demoAccountsTitle: "Demo Accounts",
+    demoAccountsHint:
+      "This is a mock authentication demo. Every account below uses the password {password}. Click an account to autofill the sign-in form.",
     errors: {
       validation_error: "Enter your email and password to continue.",
       rate_limited: "Too many attempts. Please try again in a few minutes.",
       invalid_credentials: "Incorrect email or password.",
     },
+    validation: {
+      emailRequired: "Enter your email address.",
+      emailInvalid: "Enter a valid email address.",
+      passwordRequired: "Enter your password.",
+    },
+  },
+  forgotPassword: {
+    title: "Forgot your password?",
+    subtitle: "Enter your email and we'll send you reset instructions.",
+    submit: "Send Reset Link",
+    submitting: "Sending...",
+    sentTitle: "Check your email",
+    sentBody:
+      "If an account exists for {email}, you'll receive password reset instructions shortly.",
+    continueToReset: "Continue to Reset Password (demo)",
+    backToLogin: "Back to Sign In",
+    validation: {
+      emailInvalid: "Enter a valid email address.",
+    },
+  },
+  resetPassword: {
+    title: "Reset your password",
+    subtitle: "Choose a new password for your account.",
+    subtitleWithEmail: "Choose a new password for {email}.",
+    newPasswordLabel: "New password",
+    confirmPasswordLabel: "Confirm new password",
+    submit: "Reset Password",
+    submitting: "Resetting...",
+    successTitle: "Password reset",
+    successBody:
+      "Your password has been reset. This is a mock environment, so please continue signing in with the demo password 123456.",
+    backToLogin: "Continue to Sign In",
+    validation: {
+      tooShort: "Password must be at least 6 characters.",
+      mismatch: "Passwords do not match.",
+    },
+  },
+  sessionExpired: {
+    title: "Session Expired",
+    body: "Your session has ended for security reasons. Please sign in again to continue.",
+    cta: "Sign In Again",
+  },
+  accessDenied: {
+    title: "Access Denied",
+    body: "You don't have permission to view this page. If you believe this is a mistake, contact your administrator.",
+    backToDashboard: "Back to Dashboard",
+    signInDifferent: "Sign in as a different user",
   },
 };
 

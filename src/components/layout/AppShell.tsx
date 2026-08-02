@@ -11,14 +11,14 @@ import {
 } from "@/components/layout/sidebar-context";
 import { Topbar } from "@/components/layout/Topbar";
 import { cn } from "@/lib/utils";
-import type { CurrentUser } from "@/lib/dal";
+import type { MockUser } from "@/lib/mock-auth";
 
 function AppShellInner({
   children,
   user,
 }: {
   children: ReactNode;
-  user: CurrentUser;
+  user: MockUser;
 }) {
   const { collapsed } = useSidebar();
 
@@ -46,7 +46,7 @@ export function AppShell({
   user,
 }: {
   children: ReactNode;
-  user: CurrentUser;
+  user: MockUser;
 }) {
   return (
     <SidebarProvider>
