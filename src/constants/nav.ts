@@ -1,11 +1,18 @@
 import {
   AlertTriangle,
   BarChart3,
+  Building2,
   CheckSquare,
+  ClipboardCheck,
   FileText,
+  Flag,
   Gauge,
   History,
   LayoutDashboard,
+  LibraryBig,
+  LifeBuoy,
+  ListTodo,
+  Scale,
   Settings,
   ShieldAlert,
   Sparkles,
@@ -77,6 +84,48 @@ export const navGroups: NavGroup[] = [
   {
     key: "governance",
     items: [
+      {
+        href: "/rcsa",
+        icon: ClipboardCheck,
+        labelKey: "rcsa",
+        module: "rcsa",
+      },
+      {
+        href: "/controls-library",
+        icon: LibraryBig,
+        labelKey: "controlsLibrary",
+        module: "controlsLibrary",
+      },
+      {
+        href: "/issues",
+        icon: Flag,
+        labelKey: "issues",
+        module: "issues",
+      },
+      {
+        href: "/action-plans",
+        icon: ListTodo,
+        labelKey: "actionPlans",
+        module: "actionPlans",
+      },
+      {
+        href: "/vendor-risk",
+        icon: Building2,
+        labelKey: "vendorRisk",
+        module: "vendorRisk",
+      },
+      {
+        href: "/business-continuity",
+        icon: LifeBuoy,
+        labelKey: "businessContinuity",
+        module: "businessContinuity",
+      },
+      {
+        href: "/compliance",
+        icon: Scale,
+        labelKey: "compliance",
+        module: "compliance",
+      },
       {
         href: "/approvals",
         icon: CheckSquare,

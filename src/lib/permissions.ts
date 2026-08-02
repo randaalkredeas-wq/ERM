@@ -13,7 +13,14 @@ export type Module =
   | "aiInsights"
   | "reports"
   | "users"
-  | "settings";
+  | "settings"
+  | "rcsa"
+  | "controlsLibrary"
+  | "issues"
+  | "actionPlans"
+  | "vendorRisk"
+  | "businessContinuity"
+  | "compliance";
 
 export type Action =
   | "view"
@@ -49,6 +56,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view", "create", "export"],
     users: ["view", "create", "edit", "delete", "manage"],
     settings: ["view", "edit", "manage"],
+    rcsa: ["view", "create", "edit", "delete", "approve", "export"],
+    controlsLibrary: ["view", "create", "edit", "delete", "export"],
+    issues: ["view", "create", "edit", "delete", "export"],
+    actionPlans: ["view", "create", "edit", "delete", "export"],
+    vendorRisk: ["view", "create", "edit", "delete", "export"],
+    businessContinuity: ["view", "create", "edit", "delete", "export"],
+    compliance: ["view", "create", "edit", "delete", "export"],
   },
   CRO: {
     dashboard: ["view"],
@@ -64,6 +78,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view", "create", "export"],
     users: ["view"],
     settings: ["view"],
+    rcsa: ["view", "create", "edit", "delete", "approve", "export"],
+    controlsLibrary: ["view", "create", "edit", "delete", "export"],
+    issues: ["view", "create", "edit", "delete", "approve", "export"],
+    actionPlans: ["view", "create", "edit", "delete", "export"],
+    vendorRisk: ["view", "create", "edit", "delete", "export"],
+    businessContinuity: ["view", "create", "edit", "delete", "export"],
+    compliance: ["view", "create", "edit", "delete", "export"],
   },
   DEPARTMENT_MANAGER: {
     dashboard: ["view"],
@@ -79,6 +100,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view", "create", "export"],
     users: [],
     settings: [],
+    rcsa: ["view", "create", "edit", "approve", "export"],
+    controlsLibrary: ["view", "create", "edit", "export"],
+    issues: ["view", "create", "edit", "approve", "export"],
+    actionPlans: ["view", "create", "edit", "export"],
+    vendorRisk: ["view", "create", "edit", "export"],
+    businessContinuity: ["view", "create", "edit", "export"],
+    compliance: ["view", "create", "edit", "export"],
   },
   RISK_OWNER: {
     dashboard: ["view"],
@@ -94,6 +122,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view"],
     users: [],
     settings: [],
+    rcsa: ["view", "create", "edit"],
+    controlsLibrary: ["view"],
+    issues: ["view", "create", "edit"],
+    actionPlans: ["view", "create", "edit"],
+    vendorRisk: ["view"],
+    businessContinuity: ["view"],
+    compliance: ["view"],
   },
   EMPLOYEE: {
     dashboard: ["view"],
@@ -109,6 +144,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view"],
     users: [],
     settings: [],
+    rcsa: ["view", "create"],
+    controlsLibrary: ["view"],
+    issues: ["view", "create"],
+    actionPlans: ["view"],
+    vendorRisk: ["view"],
+    businessContinuity: ["view"],
+    compliance: ["view"],
   },
   AUDITOR: {
     dashboard: ["view"],
@@ -124,6 +166,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view", "export"],
     users: [],
     settings: [],
+    rcsa: ["view", "export"],
+    controlsLibrary: ["view", "export"],
+    issues: ["view", "export"],
+    actionPlans: ["view", "export"],
+    vendorRisk: ["view", "export"],
+    businessContinuity: ["view", "export"],
+    compliance: ["view", "export"],
   },
   READONLY_EXECUTIVE: {
     dashboard: ["view"],
@@ -139,6 +188,13 @@ const PERMISSIONS: Record<UserRole, ModulePermissions> = {
     reports: ["view"],
     users: [],
     settings: [],
+    rcsa: ["view"],
+    controlsLibrary: ["view"],
+    issues: ["view"],
+    actionPlans: ["view"],
+    vendorRisk: ["view"],
+    businessContinuity: ["view"],
+    compliance: ["view"],
   },
 };
 

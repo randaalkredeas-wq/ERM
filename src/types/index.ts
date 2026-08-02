@@ -307,3 +307,5 @@ export interface PortfolioTrendPoint {
   nplRatio: number;
   eclCoverage: number;
 }
+
+export * from "./grc";
