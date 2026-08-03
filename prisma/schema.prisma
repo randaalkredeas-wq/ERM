@@ -520,3 +520,16 @@ model CreditExposure {
   @@index([collectionStatus])
   @@index([segment])
 }
+
+// ---------------------------------------------------------------------------
+// Sequential business codes (RSK-####, INC-####, ...)
+// ---------------------------------------------------------------------------
+
+/// One row per code prefix. `value` is advanced atomically (INSERT ... ON
+/// CONFLICT DO UPDATE ... RETURNING) so concurrent requests can never be
+/// handed the same next code, unlike computing max(existing) + 1 in
+/// application code.
+model CodeSequence {
+  prefix String @id
+  value  Int    @default(1000)
+}

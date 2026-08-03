@@ -31,6 +31,5 @@ export async function findRiskWithRelationsByCode(
 
 /** Generates the next sequential RSK-#### code. */
 export async function generateNextRiskCode(): Promise<string> {
-  const rows = await prisma.risk.findMany({ select: { code: true } });
-  return nextCode(rows.map((r) => r.code), "RSK");
+  return nextCode("RSK");
 }

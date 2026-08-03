@@ -62,8 +62,7 @@ export async function POST(request: NextRequest) {
     requirePermission(user.role, "incidents", "create");
 
     const body = IncidentCreateSchema.parse(await request.json());
-    const existingCodes = await prisma.incident.findMany({ select: { code: true } });
-    const code = nextCode(existingCodes.map((r) => r.code), "INC");
+    const code = await nextCode("INC");
 
     const incident = await prisma.incident.create({
       data: {
