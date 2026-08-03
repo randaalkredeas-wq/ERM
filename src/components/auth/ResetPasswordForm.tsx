@@ -68,6 +68,7 @@ export function ResetPasswordForm() {
   return (
     <Card glass className="w-full max-w-md space-y-6 p-8">
       <BrandMark
+        brand={dict.auth.brandName}
         title={dict.resetPassword.title}
         subtitle={
           email

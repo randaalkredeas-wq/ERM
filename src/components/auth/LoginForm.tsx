@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
-import { siteConfig } from "@/config/site";
 import { DEMO_ACCOUNT_PASSWORD, DEMO_ACCOUNTS } from "@/lib/mock-auth";
 import { useLocale } from "@/providers/locale-provider";
 import { useMockAuth, type LoginErrorCode } from "@/providers/mock-auth-provider";
@@ -76,7 +75,11 @@ export function LoginForm() {
   return (
     <div className="flex w-full max-w-4xl flex-col items-stretch gap-6 lg:flex-row lg:items-start">
       <Card glass className="w-full max-w-md space-y-6 p-8">
-        <BrandMark title={dict.auth.title} subtitle={siteConfig.fullName} />
+        <BrandMark
+          brand={dict.auth.brandName}
+          title={dict.auth.title}
+          subtitle={dict.auth.subtitle}
+        />
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>

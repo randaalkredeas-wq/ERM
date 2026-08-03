@@ -66,6 +66,7 @@ export function ForgotPasswordForm() {
   return (
     <Card glass className="w-full max-w-md space-y-6 p-8">
       <BrandMark
+        brand={dict.auth.brandName}
         title={dict.forgotPassword.title}
         subtitle={dict.forgotPassword.subtitle}
       />

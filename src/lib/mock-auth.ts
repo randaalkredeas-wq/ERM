@@ -37,7 +37,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-system-admin",
     name: "System Administrator",
-    email: "admin@loqen.com",
+    email: "admin@loanerm.com",
     password: DEMO_PASSWORD,
     role: "SYSTEM_ADMIN",
     department: "Technology",
@@ -51,7 +51,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-cro",
     name: "Chief Risk Officer",
-    email: "cro@loqen.com",
+    email: "cro@loanerm.com",
     password: DEMO_PASSWORD,
     role: "CRO",
     department: "Risk & Compliance",
@@ -65,7 +65,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-department-manager",
     name: "Department Manager",
-    email: "manager@loqen.com",
+    email: "manager@loanerm.com",
     password: DEMO_PASSWORD,
     role: "DEPARTMENT_MANAGER",
     department: "Operations",
@@ -79,7 +79,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-risk-owner",
     name: "Risk Owner",
-    email: "owner@loqen.com",
+    email: "owner@loanerm.com",
     password: DEMO_PASSWORD,
     role: "RISK_OWNER",
     department: "Finance",
@@ -93,7 +93,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-employee",
     name: "Employee",
-    email: "employee@loqen.com",
+    email: "employee@loanerm.com",
     password: DEMO_PASSWORD,
     role: "EMPLOYEE",
     department: "Human Resources",
@@ -107,7 +107,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-auditor",
     name: "Auditor",
-    email: "auditor@loqen.com",
+    email: "auditor@loanerm.com",
     password: DEMO_PASSWORD,
     role: "AUDITOR",
     department: "Internal Audit",
@@ -121,7 +121,7 @@ const DEMO_ACCOUNT_RECORDS: DemoAccountRecord[] = [
   {
     id: "demo-executive",
     name: "Executive",
-    email: "executive@loqen.com",
+    email: "executive@loanerm.com",
     password: DEMO_PASSWORD,
     role: "READONLY_EXECUTIVE",
     department: "Strategy",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { useLocale } from "@/providers/locale-provider";
 import { useMockAuth } from "@/providers/mock-auth-provider";
 
@@ -14,7 +15,8 @@ export default function AccessDeniedPage() {
   const router = useRouter();
 
   return (
-    <div className="bg-background flex min-h-screen flex-col items-center justify-center gap-6 px-4 text-center">
+    <div className="bg-background relative flex min-h-screen flex-col items-center justify-center gap-6 px-4 text-center">
+      <LanguageToggle className="absolute end-4 top-4" />
       <div className="gradient-primary shadow-primary/30 flex h-20 w-20 items-center justify-center rounded-3xl shadow-lg">
         <ShieldOff className="h-9 w-9 text-white" />
       </div>
