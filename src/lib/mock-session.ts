@@ -1,8 +1,9 @@
 /**
  * Client-side-only mock session persistence. Stores the signed-in demo
- * account id + expiry in localStorage, plus a lightweight presence-only
- * cookie so the existing edge proxy (src/proxy.ts) can keep gating routes
- * without any server-side session lookup.
+ * account id + expiry in localStorage, plus a cookie carrying that same
+ * account id so the edge proxy (src/proxy.ts) can gate routes on presence
+ * alone, while API routes can resolve identity via the bridge in
+ * src/lib/dal.ts - all without a real server-side session store.
  */
 
 const SESSION_KEY = "erm_mock_session";
@@ -35,7 +36,10 @@ export function createMockSession(
   if (isBrowser()) {
     window.localStorage.setItem(SESSION_KEY, JSON.stringify(record));
     const maxAgeSeconds = Math.floor(durationMs / 1000);
-    document.cookie = `${SESSION_COOKIE}=1; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
+    // The cookie value is the demo account id (not just a presence flag) so
+    // API routes can resolve a matching Postgres user - see
+    // getMockCurrentUser() in src/lib/dal.ts.
+    document.cookie = `${SESSION_COOKIE}=${encodeURIComponent(userId)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
   }
 
   return record;
