@@ -31,33 +31,41 @@ const MOCK_SESSION_COOKIE = "erm_session";
  * src/providers/mock-auth-provider.tsx) to the Prisma-backed API routes.
  * There is no real server session for a mock login - createMockSession()
  * stores the signed-in demo account id directly in the erm_session cookie
- * instead of a random token. Each demo account is mapped to one real seeded
- * Postgres user of the same role so foreign keys (e.g. Risk.ownerId) stay
- * valid; the returned identity (name/email/role) is still the demo
- * account's own. Remove this bridge once real authentication replaces the
- * mock login.
+ * instead of a random token. Each demo account is bridged to one real seeded
+ * Postgres user of the same role so foreign keys (e.g. Risk.ownerId,
+ * AuditLogEntry.userId) stay valid; the returned identity (name/email/role)
+ * is still the demo account's own. Remove this bridge once real
+ * authentication replaces the mock login.
+ *
+ * The bridge resolves the real user BY ROLE AT REQUEST TIME rather than a
+ * hardcoded id - Postgres assigns each seeded user a fresh `cuid()` id, so a
+ * ready-made map of ids captured from one database (e.g. a local sandbox)
+ * silently points at rows that don't exist in any other database (e.g. the
+ * production database Vercel deploys against). That mismatch doesn't fail
+ * the lookup itself - it fails later, as an opaque foreign-key violation the
+ * first time the id is written (creating a risk, logging an audit entry,
+ * etc.), surfacing to the user as a generic 500 "Something went wrong."
  */
-const MOCK_TO_REAL_USER_ID: Record<string, string> = {
-  "demo-system-admin": "cmsaixuw1000a3y7dlifqomtu",
-  "demo-cro": "cmsaixuuc00003y7duzjbeufj",
-  "demo-department-manager": "cmsaixuur00013y7dndjgebcy",
-  "demo-risk-owner": "cmsaixuvv00093y7d1w764swp",
-  "demo-employee": "cmsaixuw8000b3y7ds8nc9670",
-  "demo-auditor": "cmsaixuuz00023y7dckozlwjg",
-  "demo-executive": "cmsaixuwi000c3y7d9osckmo4",
-};
-
 async function getMockCurrentUser() {
   const cookieStore = await cookies();
   const mockAccountId = cookieStore.get(MOCK_SESSION_COOKIE)?.value;
   if (!mockAccountId) return null;
 
-  const realUserId = MOCK_TO_REAL_USER_ID[mockAccountId];
   const account = getDemoAccountById(mockAccountId);
-  if (!realUserId || !account) return null;
+  if (!account) return null;
+
+  // Not filtered by status: this real user only anchors foreign keys, and
+  // the demo persona's own (always-"ACTIVE") status is used for display
+  // below regardless of the anchor row's actual seeded status.
+  const realUser = await prisma.user.findFirst({
+    where: { role: account.role },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!realUser) return null;
 
   return {
-    id: realUserId,
+    id: realUser.id,
     name: account.name,
     email: account.email,
     role: account.role,
